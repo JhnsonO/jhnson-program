@@ -328,11 +328,14 @@
     <textarea class="note-input" id="inj-notes" placeholder="Notes on how it felt this week..."></textarea>
     <button class="save-btn" onclick="saveNotes()">Save notes</button>
   </div>
+
+  <div class="section-title">Recovery tracker</div>
+  <div class="injury-card" id="recovery-tracker"></div>
 </div>
 
 </div>
 <script>
-const STORAGE_KEYS = {prog:'jhnson_prog',daily:'jhnson_daily',logs:'jhnson_session_logs',reflections:'jhnson_reflections',habits:'jhnson_habits'};
+const STORAGE_KEYS = {prog:'jhnson_prog',daily:'jhnson_daily',logs:'jhnson_session_logs',reflections:'jhnson_reflections',habits:'jhnson_habits',injuryProfiles:'jhnson_injury_profiles',recoveryCaps:'jhnson_recovery_capabilities'};
 const state = {body:'',inj:[],focus:[],week:'',sleep:'',pl:''};
 let saved = {};
 let todayDaily = null;
@@ -389,6 +392,26 @@ let reflections = safeRead(STORAGE_KEYS.reflections, []);
 if(!Array.isArray(reflections)) reflections = [];
 let habits = safeRead(STORAGE_KEYS.habits, []);
 if(!Array.isArray(habits)) habits = [];
+const RECOVERY_AREAS = [
+  {key:'groin',label:'Groin'},
+  {key:'hamstring',label:'Hamstring'},
+  {key:'hip_flexor',label:'Hip flexor'},
+  {key:'knee',label:'Knee'},
+  {key:'ankle',label:'Ankle'},
+  {key:'lower_back',label:'Lower back'}
+];
+function defaultInjuryProfiles(){
+  const out = {};
+  RECOVERY_AREAS.forEach(a=>{ out[a.key] = {active:false,start_date:null,severity:0,stage:0}; });
+  return out;
+}
+function defaultRecoveryCaps(){
+  const out = {};
+  RECOVERY_AREAS.forEach(a=>{ out[a.key] = {walking:true,squeeze:false,bodyweight_squat:true,single_leg_load:false,jog:false,sprint:false,cut:false,strike_ball:false}; });
+  return out;
+}
+let injuryProfiles = {...defaultInjuryProfiles(), ...(safeRead(STORAGE_KEYS.injuryProfiles, {})||{})};
+let recoveryCaps = {...defaultRecoveryCaps(), ...(safeRead(STORAGE_KEYS.recoveryCaps, {})||{})};
 
 function pick(el,group,cls){
   document.querySelectorAll('#'+group+'-chips .chip').forEach(c=>{c.className='chip';});
@@ -618,6 +641,110 @@ function cellColor(state){
 }
 // HABITS END
 
+// RECOVERY START
+function saveRecovery(){
+  safeWrite(STORAGE_KEYS.injuryProfiles, injuryProfiles);
+  safeWrite(STORAGE_KEYS.recoveryCaps, recoveryCaps);
+}
+function updateProfile(area, field, value){
+  injuryProfiles[area][field] = value;
+  if(field==='active' && !value){
+    injuryProfiles[area].severity = 0;
+    injuryProfiles[area].stage = 0;
+  }
+  saveRecovery();
+  renderRecoveryTracker();
+}
+function setProfileNumber(area, field, value){
+  injuryProfiles[area][field] = Number(value);
+  if(field==='severity' && Number(value)===0){
+    injuryProfiles[area].active = false;
+    injuryProfiles[area].stage = 0;
+  } else if(field==='severity' && Number(value)>0){
+    injuryProfiles[area].active = true;
+  }
+  saveRecovery();
+  renderRecoveryTracker();
+}
+function toggleCapability(area, cap){
+  recoveryCaps[area][cap] = !recoveryCaps[area][cap];
+  saveRecovery();
+  renderRecoveryTracker();
+}
+function daysSince(dateStr){
+  const d = parseLocalDate(dateStr);
+  if(!d) return null;
+  const today = parseLocalDate(getLocalDateKey());
+  const ms = today - d;
+  return ms>=0 ? Math.floor(ms/86400000)+1 : null;
+}
+function limitingRecovery(){
+  const active = RECOVERY_AREAS
+    .map(a=>({key:a.key,label:a.label,p:injuryProfiles[a.key],c:recoveryCaps[a.key]}))
+    .filter(x=>x.p.active && x.p.stage>0);
+  if(!active.length) return null;
+  active.sort((a,b)=>a.p.stage-b.p.stage || b.p.severity-a.p.severity);
+  return active[0];
+}
+function recoveryMainLimiter(rec){
+  if(!rec) return '';
+  if(!rec.c.cut) return 'no cutting yet';
+  if(!rec.c.strike_ball) return 'no striking yet';
+  if(!rec.c.jog) return 'no jogging yet';
+  if(!rec.c.single_leg_load) return 'single-leg loading not ready';
+  return '';
+}
+function applyRecoveryRules(sessions, edText, day){
+  if(day && day!==getTodayDayName()) return {sessions, statusText:'Recovery status: None', limiter:''};
+  const rec = limitingRecovery();
+  if(!rec) return {sessions, statusText:'Recovery status: None', limiter:''};
+  const stage = Number(rec.p.stage||0);
+  const dayCount = daysSince(rec.p.start_date);
+  let out = sessions.map(s=>({time:s.time,label:s.label,items:[...s.items]}));
+  const removeByKeywords = (arr, words) => arr.map(s=>({...s,items:s.items.filter(item=>!words.some(w=>item.toLowerCase().includes(w)))}));
+
+  if(stage===1){
+    out = [{time:'Today',label:'Rehab only',items:['Pain-management day: rehab and gentle mobility only.',edText]}];
+  } else if(stage===2){
+    out = out.filter(s=>!s.label.includes('Pitch'));
+    out.push({time:'Recovery',label:'Controlled strength + rehab',items:['Controlled strength only (pain-free range)','Rehab sequence: Copenhagens, hip flexion, isometrics']});
+  } else if(stage===3){
+    out = removeByKeywords(out,['sprint','max sprint','conditioning','1v1','agility','cut']);
+  } else if(stage===4){
+    out = removeByKeywords(out,['max sprint']);
+  }
+  if(!rec.c.jog) out = removeByKeywords(out,['run','running','sprint','conditioning','jog']);
+  if(!rec.c.cut) out = removeByKeywords(out,['1v1','direction','agility','cut']);
+  if(!rec.c.strike_ball) out = removeByKeywords(out,['shoot','shot','cross','finish','volleys']);
+  if(!rec.c.single_leg_load) out = removeByKeywords(out,['single leg','split squat','lunge']);
+
+  const statusText = `${rec.label} · Day ${dayCount||'?'} · Stage ${stage}`;
+  return {sessions:out,statusText,limiter:recoveryMainLimiter(rec)};
+}
+function renderRecoveryTracker(){
+  const el = document.getElementById('recovery-tracker');
+  if(!el) return;
+  el.innerHTML = RECOVERY_AREAS.map(a=>{
+    const p = injuryProfiles[a.key] || {active:false,start_date:null,severity:0,stage:0};
+    const c = recoveryCaps[a.key] || defaultRecoveryCaps()[a.key];
+    const activeInfo = p.active ? ` · Day ${daysSince(p.start_date)||'?'} · Stage ${p.stage||0}` : '';
+    return `<div class="injury-row" style="display:block">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <span class="inj-name"><strong>${a.label}</strong>${activeInfo}</span>
+        <button class="save-btn" onclick="updateProfile('${a.key}','active',${!p.active})">${p.active?'Active':'Inactive'}</button>
+      </div>
+      ${p.active ? `
+      <div style="margin-top:8px">
+        <input type="date" value="${p.start_date||''}" onchange="updateProfile('${a.key}','start_date',this.value)" style="font-size:12px;padding:6px 8px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);font-family:var(--font-sans)">
+        <div class="chip-row" style="margin-top:6px">${[0,1,2,3].map(v=>`<div class="chip ${p.severity===v?'sel':''}" onclick="setProfileNumber('${a.key}','severity',${v})">Severity ${v}</div>`).join('')}</div>
+        <div class="chip-row" style="margin-top:6px">${[1,2,3,4,5].map(v=>`<div class="chip ${p.stage===v?'sel':''}" onclick="setProfileNumber('${a.key}','stage',${v})">Stage ${v}</div>`).join('')}</div>
+        <div class="chip-row" style="margin-top:6px">${['walking','squeeze','bodyweight_squat','single_leg_load','jog','sprint','cut','strike_ball'].map(cap=>`<div class="chip ${c[cap]?'sel':''}" onclick="toggleCapability('${a.key}','${cap}')">${cap.replace('_',' ')}</div>`).join('')}</div>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+// RECOVERY END
+
 // DASHBOARD START
 function parseLocalDate(dateStr){
   if(!dateStr) return null;
@@ -679,6 +806,8 @@ function renderDashboard(){
   const todayHabits = getHabitsEntry(getLocalDateKey());
   const standardsDone = habitCount(todayHabits);
   const ballStreak = habitStreak('ball_mastery');
+  const rec = limitingRecovery();
+  const recLine = rec ? `${rec.label} stage ${rec.p.stage}` : 'None';
   const stats = {logs:weekLogs.length,reflections:weekRefs.length,skipped,avgRpeNum};
   const insight = dashboardInsight(stats);
 
@@ -707,6 +836,7 @@ function renderDashboard(){
       <div><strong>Current streak:</strong> ${streak} days</div>
       <div><strong>Daily standards:</strong> ${standardsDone}/5 today</div>
       <div><strong>Ball mastery streak:</strong> ${ballStreak} days</div>
+      <div><strong>Active recovery:</strong> ${recLine}</div>
     </div>
     <div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:var(--color-background-secondary);font-size:12px;color:var(--color-text-secondary)">
       ${insight}
@@ -754,7 +884,9 @@ function renderToday(){
   const injured = state.body === 'injured';
   const baseSessions = injured ? (plan?.injured || plan?.normal || []) : (plan?.normal || []);
   const edText = injured ? ((plan?.edInjured)||plan?.ed||'') : (plan?.ed||'');
-  const sessions = applyDailyAdjustmentsForDay(baseSessions, edText, day);
+  const dailyAdjusted = applyDailyAdjustmentsForDay(baseSessions, edText, day);
+  const recoveryAdjusted = applyRecoveryRules(dailyAdjusted, edText, day);
+  const sessions = recoveryAdjusted.sessions;
   const dayLog = getEntryForDateDay(sessionLogs, today, day);
   const dayReflection = getEntryForDateDay(reflections, today, day);
   const todayHabits = getHabitsEntry(today);
@@ -782,6 +914,7 @@ function renderToday(){
   if(!el) return;
   el.innerHTML = `
     <div class="daily-bar"><strong>Today:</strong> ${day} · ${statsLine}</div>
+    <div class="daily-bar"><strong>Recovery status:</strong> ${recoveryAdjusted.statusText}${recoveryAdjusted.limiter?` · Main limiter: ${recoveryAdjusted.limiter}`:''}</div>
     <div class="day-card">
       <div class="day-head">
         <div class="day-left">
@@ -1185,6 +1318,7 @@ function generateWeek(){
       : plan.ed;
 
     sessions = applyDailyAdjustmentsForDay(sessions, edText, day);
+    sessions = applyRecoveryRules(sessions, edText, day).sessions;
 
     const plNote = pl==='yes' && (day==='Wednesday'||day==='Friday') ? ' + Powerleague' : '';
     const pillText = plan.pillText + plNote;
@@ -1273,6 +1407,7 @@ function generateWeek(){
 
   renderJuggling();
   renderInjuries();
+  renderRecoveryTracker();
 }
 
 function toggleDay(head){
