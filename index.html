@@ -199,6 +199,18 @@
 </div>
 <!-- // DAILY CHECK-IN END -->
 
+<!-- TODAY SCREEN -->
+<div id="screen-today" class="screen">
+  <div class="week-nav">
+    <div class="week-nav-title">Today</div>
+    <div style="display:flex;gap:8px">
+      <button class="back-btn" onclick="openWeekView()">View week</button>
+      <button class="back-btn" onclick="startRebuildWeek()">Rebuild week</button>
+    </div>
+  </div>
+  <div id="today-main"></div>
+</div>
+
 <!-- CHECK-IN SCREEN -->
 <div id="screen-checkin" class="screen">
 
@@ -267,14 +279,17 @@
     </div>
   </div>
 
-  <button class="gen-btn" onclick="generateWeek()">Build my week →</button>
+  <button class="gen-btn" onclick="buildWeekPlan()">Build my week →</button>
 </div>
 
 <!-- WEEK SCREEN -->
 <div id="screen-week" class="screen">
   <div class="week-nav">
     <div class="week-nav-title">This week</div>
-    <button class="back-btn" onclick="goBack()">Edit check-in</button>
+    <div style="display:flex;gap:8px">
+      <button class="back-btn" onclick="openTodayView()">Today</button>
+      <button class="back-btn" onclick="startRebuildWeek()">Rebuild week</button>
+    </div>
   </div>
 
   <div id="injury-banner-wrap"></div>
@@ -341,10 +356,28 @@ function getLocalDateKey(){
   const day = String(d.getDate()).padStart(2,'0');
   return `${y}-${m}-${day}`;
 }
+function getWeekStartKey(){
+  const d = parseLocalDate(getLocalDateKey());
+  const offset = (d.getDay()+6)%7;
+  d.setDate(d.getDate()-offset);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function getTodayDayName(){
+  return DAYS[(new Date().getDay()+6)%7];
+}
+function hasCurrentWeekPlan(){
+  return !!(saved.weekState && saved.weekState.week_start===getWeekStartKey());
+}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if(el) el.classList.add('active');
+}
 
 saved = safeRead(STORAGE_KEYS.prog, {});
 if(saved.tricks) state.tricks = saved.tricks;
 if(saved.injuries) state.injuries = saved.injuries;
+if(saved.weekState && !saved.weekState.week_start) saved.weekState.week_start = getWeekStartKey();
 if(saved.weekState) Object.assign(state, saved.weekState);
 if(!state.tricks) state.tricks = [];
 if(!state.injuries) state.injuries = {};
@@ -396,12 +429,8 @@ function saveDailyCheckin(){
 }
 
 function routeFromDaily(){
-  document.getElementById('screen-daily').classList.remove('active');
-  if(saved.weekState){
-    generateWeek();
-  } else {
-    document.getElementById('screen-checkin').classList.add('active');
-  }
+  if(hasCurrentWeekPlan()) openTodayView();
+  else showScreen('screen-checkin');
 }
 // // DAILY CHECK-IN END
 
@@ -622,6 +651,107 @@ function renderDashboard(){
   `;
 }
 // DASHBOARD END
+
+// TODAY VIEW START
+function getEntryForDateDay(list, date, day){
+  return list.find(x=>x.date===date && x.day_name===day) || null;
+}
+function applyDailyAdjustmentsForDay(sessions, edText, day){
+  if(!todayDaily || day!==getTodayDayName()) return sessions;
+  let adjusted = sessions.map(s=>({time:s.time,label:s.label,items:[...s.items]}));
+  if(todayDaily.pain >= 6){
+    adjusted = adjusted.map(s => s.label.includes('Pitch')
+      ? {time:s.time,label:'Rehab block',items:[
+          'Pain is elevated today — no pitch exposure.',
+          'Copenhagens 6 each side · Hip flexion KB 8 each side · Isometric split squat hold 3×30s',
+          'Light mobility only: hip 90/90 and hamstring flossing'
+        ]}
+      : s
+    );
+  }
+  if(todayDaily.soreness >= 4){
+    adjusted = adjusted.map(s => ({
+      ...s,
+      items:s.items.filter(item => {
+        const txt = item.toLowerCase();
+        return !(txt.includes('sprint') || txt.includes('conditioning'));
+      })
+    }));
+  }
+  if(todayDaily.sleep < 5 && adjusted.length) adjusted = adjusted.slice(0,-1);
+  if(todayDaily.energy <= 2) adjusted = [{time:'Today',label:'Minimum version',items:[edText]}];
+  return adjusted;
+}
+function renderToday(){
+  const today = getLocalDateKey();
+  const day = getTodayDayName();
+  const plan = getDayPlan(day, state.body, state.inj, state.focus, state.week, state.sleep, state.pl);
+  const injured = state.body === 'injured';
+  const baseSessions = injured ? (plan?.injured || plan?.normal || []) : (plan?.normal || []);
+  const edText = injured ? ((plan?.edInjured)||plan?.ed||'') : (plan?.ed||'');
+  const sessions = applyDailyAdjustmentsForDay(baseSessions, edText, day);
+  const dayLog = getEntryForDateDay(sessionLogs, today, day);
+  const dayReflection = getEntryForDateDay(reflections, today, day);
+  const statsLine = todayDaily
+    ? `Sleep ${todayDaily.sleep}h · Energy ${todayDaily.energy} · Soreness ${todayDaily.soreness} · Pain ${todayDaily.pain}`
+    : 'No daily check-in for today yet.';
+  const logLine = dayLog ? `${logStatusText(dayLog.completed_status)} · ${dayLog.duration_minutes} min · RPE ${dayLog.rpe}` : 'Not logged yet.';
+  const refLine = dayReflection
+    ? `${reflectionText(dayReflection.rating)}${dayReflection.confidence?` · Confidence ${dayReflection.confidence}`:''}`
+    : 'No reflection yet.';
+
+  const el = document.getElementById('today-main');
+  if(!el) return;
+  el.innerHTML = `
+    <div class="daily-bar"><strong>Today:</strong> ${day} · ${statsLine}</div>
+    <div class="day-card">
+      <div class="day-head">
+        <div class="day-left">
+          <span class="day-name">${day} session</span>
+          <span class="day-pill ${plan?plan.pill:'pill-rest'}">${plan?plan.pillText:'Plan unavailable'}</span>
+        </div>
+      </div>
+      <div class="day-body open" style="display:block">
+        <div class="time-block">
+          ${sessions.map(s=>`<div class="time-row"><div class="time-stamp">${s.time}</div><div class="time-content"><div class="time-label">${s.label}</div>${s.items.map(i=>`<div class="time-item">${i}</div>`).join('')}</div></div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="daily-bar"><strong>Today log:</strong> ${logLine}</div>
+    <div class="daily-bar"><strong>Today reflection:</strong> ${refLine}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="save-btn" onclick="openWeekView()">View week</button>
+      <button class="save-btn" onclick="openWeekAndExpand('${day}')">${dayLog?'Edit log':'Log session'}</button>
+      <button class="save-btn" onclick="openWeekAndReflect('${day}')">${dayReflection?'Edit reflection':'Reflect'}</button>
+      <button class="save-btn" onclick="startRebuildWeek()">Rebuild week</button>
+    </div>
+  `;
+}
+function openTodayView(){
+  renderToday();
+  showScreen('screen-today');
+}
+function openWeekView(){
+  generateWeek();
+}
+function buildWeekPlan(){
+  saved.weekState = {week_start:getWeekStartKey(),body:state.body,inj:[...state.inj],focus:[...state.focus],week:state.week,sleep:state.sleep,pl:state.pl};
+  saveLocal();
+  if(todayDaily) openTodayView();
+  else showScreen('screen-daily');
+}
+function openWeekAndExpand(day){
+  generateWeek();
+  setTimeout(()=>{ const btn = document.querySelector(`button[onclick="openLogPanel('${day}')"]`); if(btn) btn.click(); }, 0);
+}
+function openWeekAndReflect(day){
+  generateWeek();
+  setTimeout(()=>{ const btn = document.querySelector(`button[onclick="openReflectPanel('${day}')"]`); if(btn) btn.click(); }, 0);
+}
+function startRebuildWeek(){
+  showScreen('screen-checkin');
+}
+// TODAY VIEW END
 
 // ─── PROGRAMME DATA ───────────────────────────────────────────────────────────
 // Each day: normal + injured variants
@@ -888,11 +1018,9 @@ const STUDY_PLAYERS = [
 // ─── RENDER ──────────────────────────────────────────────────────────────────
 function generateWeek(){
   const {body,inj,focus,week:wk,sleep:sl,pl} = state;
-  document.getElementById('screen-checkin').classList.remove('active');
-  document.getElementById('screen-daily').classList.remove('active');
-  document.getElementById('screen-week').classList.add('active');
+  showScreen('screen-week');
   if(body || inj.length || focus.length || wk || sl || pl){
-    saved.weekState = {body,inj:[...inj],focus:[...focus],week:wk,sleep:sl,pl};
+    saved.weekState = {week_start:getWeekStartKey(),body,inj:[...inj],focus:[...focus],week:wk,sleep:sl,pl};
   }
   saveLocal();
 
@@ -957,37 +1085,7 @@ function generateWeek(){
       ? (plan.edInjured || plan.ed)
       : plan.ed;
 
-    // Daily adjustments layered on top
-    if(todayDaily){
-      if(todayDaily.pain >= 6){
-        sessions = sessions.map(s => s.label.includes('Pitch')
-          ? {time:s.time,label:'Rehab block',items:[
-              'Pain is elevated today — no pitch exposure.',
-              'Copenhagens 6 each side · Hip flexion KB 8 each side · Isometric split squat hold 3×30s',
-              'Light mobility only: hip 90/90 and hamstring flossing'
-            ]}
-          : s
-        );
-      }
-
-      if(todayDaily.soreness >= 4){
-        sessions = sessions.map(s => ({
-          ...s,
-          items:s.items.filter(item => {
-            const txt = item.toLowerCase();
-            return !(txt.includes('sprint') || txt.includes('conditioning'));
-          })
-        }));
-      }
-
-      if(todayDaily.sleep < 5 && sessions.length){
-        sessions = sessions.slice(0,-1);
-      }
-
-      if(todayDaily.energy <= 2){
-        sessions = [{time:'Today',label:'Minimum version',items:[edText]}];
-      }
-    }
+    sessions = applyDailyAdjustmentsForDay(sessions, edText, day);
 
     const plNote = pl==='yes' && (day==='Wednesday'||day==='Friday') ? ' + Powerleague' : '';
     const pillText = plan.pillText + plNote;
@@ -1162,14 +1260,16 @@ if(saved.injNotes){ setTimeout(()=>{const el=document.getElementById('inj-notes'
 
 // // DAILY CHECK-IN START
 (function initAppFlow(){
-  if(todayDaily && saved.weekState){
-    generateWeek();
-  } else if(todayDaily){
-    document.getElementById('screen-checkin').classList.add('active');
-  } else {
-    document.getElementById('screen-daily').classList.add('active');
-    document.getElementById('screen-checkin').classList.remove('active');
+  if(!hasCurrentWeekPlan()){
+    showScreen('screen-checkin');
+    return;
   }
+  Object.assign(state, saved.weekState||{});
+  if(!todayDaily){
+    showScreen('screen-daily');
+    return;
+  }
+  openTodayView();
 })();
 // // DAILY CHECK-IN END
 </script>
