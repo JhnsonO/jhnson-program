@@ -6,420 +6,605 @@
   <title>jhnson program</title>
   <style>
     :root {
-      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      --color-text-primary: #1a1a1a;
-      --color-text-secondary: #666;
-      --color-text-tertiary: #999;
-      --color-background-primary: #fff;
-      --color-background-secondary: #f5f5f5;
-      --color-border-secondary: #ddd;
-      --color-border-tertiary: #eee;
-      --border-radius-md: 8px;
-      --border-radius-lg: 12px;
-      --color-background-success: #e8f5e9;
-      --color-text-success: #2e7d32;
-      --color-background-warning: #fff8e1;
-      --color-text-warning: #f57f17;
-      --color-background-danger: #fce4ec;
-      --color-text-danger: #c62828;
-      --color-background-info: #e3f2fd;
-      --color-text-info: #1565c0;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --bg: #ffffff;
+      --bg2: #f5f5f5;
+      --bg3: #eeeeee;
+      --text: #1a1a1a;
+      --text2: #666666;
+      --text3: #999999;
+      --border: #e0e0e0;
+      --border2: #eeeeee;
+      --green-bg: #e8f5e9; --green: #2e7d32;
+      --amber-bg: #fff8e1; --amber: #e65100;
+      --red-bg: #fce4ec; --red: #c62828;
+      --blue-bg: #e3f2fd; --blue: #1565c0;
+      --radius: 12px; --radius-sm: 8px;
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --color-text-primary: #f0f0f0;
-        --color-text-secondary: #aaa;
-        --color-text-tertiary: #777;
-        --color-background-primary: #1a1a1a;
-        --color-background-secondary: #2a2a2a;
-        --color-border-secondary: #444;
-        --color-border-tertiary: #333;
-        --color-background-success: #1b3a1d;
-        --color-text-success: #66bb6a;
-        --color-background-warning: #3a2e00;
-        --color-text-warning: #ffca28;
-        --color-background-danger: #3a1018;
-        --color-text-danger: #ef9a9a;
-        --color-background-info: #0d2137;
-        --color-text-info: #64b5f6;
+        --bg: #141414; --bg2: #1e1e1e; --bg3: #2a2a2a;
+        --text: #f0f0f0; --text2: #aaaaaa; --text3: #666666;
+        --border: #333333; --border2: #2a2a2a;
+        --green-bg: #1b3a1d; --green: #66bb6a;
+        --amber-bg: #2e2000; --amber: #ffb74d;
+        --red-bg: #2a0f0f; --red: #ef9a9a;
+        --blue-bg: #0d2137; --blue: #64b5f6;
       }
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: var(--font-sans);
-      background: var(--color-background-primary);
-      color: var(--color-text-primary);
-      padding: 1rem;
-      min-height: 100vh;
-    }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); padding: 1rem; min-height: 100vh; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+    .app { max-width: 680px; margin: 0 auto; padding-bottom: 3rem; }
+
+    /* HEADER */
+    .header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.5rem; }
+    .header h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+    .header .sub { font-size: 12px; color: var(--text3); }
+
+    /* SCREENS */
+    .screen { display: none; } .screen.active { display: block; }
+
+    /* CHECK-IN */
+    .q-block { margin-bottom: 1.5rem; }
+    .q-step { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; }
+    .q-title { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 10px; }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 7px; }
+    .chip { font-size: 13px; padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; transition: all .15s; user-select: none; }
+    .chip:hover { background: var(--bg2); }
+    .chip.sel { background: var(--text); color: var(--bg); border-color: transparent; }
+    .chip.sel-green { background: var(--green-bg); color: var(--green); border-color: transparent; }
+    .chip.sel-amber { background: var(--amber-bg); color: var(--amber); border-color: transparent; }
+    .chip.sel-red { background: var(--red-bg); color: var(--red); border-color: transparent; }
+    .chip.sel-blue { background: var(--blue-bg); color: var(--blue); border-color: transparent; }
+    .gen-btn { width: 100%; padding: 14px; font-size: 15px; font-weight: 500; border-radius: var(--radius); border: none; background: var(--text); color: var(--bg); cursor: pointer; margin-top: 1.5rem; transition: opacity .15s; }
+    .gen-btn:hover { opacity: .8; }
+
+    /* WEEK VIEW */
+    .week-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+    .week-nav-title { font-size: 17px; font-weight: 600; }
+    .back-btn { font-size: 13px; padding: 6px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: var(--text2); cursor: pointer; }
+    .back-btn:hover { background: var(--bg2); }
+
+    /* DAILY NON-NEGOTIABLES BAR */
+    .nonneg { background: var(--bg2); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 14px; font-size: 13px; color: var(--text2); line-height: 1.6; border-left: 3px solid var(--text3); }
+    .nonneg strong { color: var(--text); font-weight: 600; }
+
+    /* DAY CARDS */
+    .day-card { border: 1px solid var(--border2); border-radius: var(--radius); margin-bottom: 10px; background: var(--bg); overflow: hidden; }
+    .day-head { display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; cursor: pointer; user-select: none; }
+    .day-head:hover { background: var(--bg2); }
+    .day-left { display: flex; align-items: center; gap: 10px; }
+    .day-name { font-size: 15px; font-weight: 500; }
+    .day-time { font-size: 11px; color: var(--text3); margin-left: 2px; }
+    .day-pill { font-size: 11px; padding: 2px 9px; border-radius: 10px; font-weight: 500; }
+    .pill-pitch { background: var(--green-bg); color: var(--green); }
+    .pill-gym { background: var(--blue-bg); color: var(--blue); }
+    .pill-recover { background: var(--amber-bg); color: var(--amber); }
+    .pill-rest { background: var(--bg3); color: var(--text3); }
+    .day-chevron { font-size: 11px; color: var(--text3); transition: transform .2s; }
+    .day-chevron.open { transform: rotate(180deg); }
+    .day-body { display: none; padding: 0 14px 14px; border-top: 1px solid var(--border2); }
+    .day-body.open { display: block; }
+
+    /* SESSION BLOCKS */
+    .time-row { display: flex; gap: 12px; margin-top: 14px; align-items: flex-start; }
+    .time-label { font-size: 11px; color: var(--text3); min-width: 70px; padding-top: 1px; font-variant-numeric: tabular-nums; }
+    .session-block { flex: 1; }
+    .session-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text2); margin-bottom: 5px; }
+    .session-item { font-size: 13px; color: var(--text); padding: 3px 0; border-bottom: 1px solid var(--border2); line-height: 1.55; }
+    .session-item:last-child { border-bottom: none; }
+    .session-item .tag { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 6px; margin-left: 5px; font-weight: 500; vertical-align: middle; }
+    .tag-key { background: var(--red-bg); color: var(--red); }
+    .tag-conf { background: var(--amber-bg); color: var(--amber); }
+
+    /* REHAB & ED */
+    .rehab-bar { background: var(--red-bg); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 12px; color: var(--red); margin-top: 12px; font-weight: 500; line-height: 1.5; }
+    .rehab-bar.ok { background: var(--green-bg); color: var(--green); }
+    .ed-block { margin-top: 10px; background: var(--amber-bg); border-radius: var(--radius-sm); padding: 10px 12px; }
+    .ed-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--amber); margin-bottom: 4px; }
+    .ed-text { font-size: 13px; color: var(--text); line-height: 1.5; }
+
+    /* INJURY BANNER */
+    .injury-banner { background: var(--red-bg); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 14px; font-size: 13px; color: var(--red); font-weight: 500; line-height: 1.5; border-left: 3px solid var(--red); }
+
+    /* DIVIDER */
+    hr { border: none; border-top: 1px solid var(--border2); margin: 1.5rem 0; }
+    .section-title { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin: 1.4rem 0 .8rem; }
+
+    /* JUGGLE TRACKER */
+    .juggle-card, .injury-card { border: 1px solid var(--border2); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; background: var(--bg); }
+    .juggle-title { font-size: 13px; color: var(--text2); margin-bottom: 10px; }
+    .juggle-trick { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border2); font-size: 13px; gap: 8px; }
+    .juggle-trick:last-child { border-bottom: none; }
+    .trick-name { flex: 1; }
+    .juggle-dots { display: flex; gap: 5px; }
+    .dot { width: 11px; height: 11px; border-radius: 50%; border: 1px solid var(--border); cursor: pointer; transition: all .1s; }
+    .dot.filled { background: var(--green); border-color: transparent; }
+    .dot.stall { background: var(--red); border-color: transparent; }
+    .add-trick-row { display: flex; gap: 8px; margin-top: 10px; }
+    .add-trick-row input { flex: 1; font-size: 13px; padding: 7px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg2); color: var(--text); font-family: var(--font); }
+    .add-trick-row button, .small-btn { font-size: 13px; padding: 7px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; white-space: nowrap; font-family: var(--font); }
+    .add-trick-row button:hover, .small-btn:hover { background: var(--bg2); }
+
+    /* INJURY LOG */
+    .injury-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border2); font-size: 13px; gap: 8px; }
+    .injury-row:last-child { border-bottom: none; }
+    .inj-name { flex: 1; }
+    .inj-dots { display: flex; gap: 4px; }
+    .inj-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--bg3); border: 1px solid var(--border); cursor: pointer; transition: all .1s; }
+    .inj-dot.d1 { background: #66bb6a; border-color: transparent; }
+    .inj-dot.d2 { background: #ffb74d; border-color: transparent; }
+    .inj-dot.d3 { background: #ef5350; border-color: transparent; }
+    textarea.note-input { width: 100%; font-size: 13px; padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg2); color: var(--text); resize: none; min-height: 60px; font-family: var(--font); line-height: 1.5; margin-top: 10px; }
   </style>
 </head>
 <body>
-
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-.app{font-family:var(--font-sans);padding:1rem 0;max-width:680px}
-.screen{display:none}.screen.active{display:block}
-.q-block{margin-bottom:1.5rem}
-.q-label{font-size:11px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
-.q-title{font-size:15px;font-weight:500;color:var(--color-text-primary);margin-bottom:10px}
-.chip-row{display:flex;flex-wrap:wrap;gap:7px}
-.chip{font-size:13px;padding:7px 14px;border-radius:20px;border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary);cursor:pointer;transition:all 0.15s;user-select:none;line-height:1}
-.chip:hover{background:var(--color-background-secondary)}
-.chip.sel{background:var(--color-text-primary);color:var(--color-background-primary);border-color:transparent}
-.chip.sel-green{background:var(--color-background-success);color:var(--color-text-success);border-color:transparent}
-.chip.sel-amber{background:var(--color-background-warning);color:var(--color-text-warning);border-color:transparent}
-.chip.sel-red{background:var(--color-background-danger);color:var(--color-text-danger);border-color:transparent}
-.chip.sel-blue{background:var(--color-background-info);color:var(--color-text-info);border-color:transparent}
-.slider-wrap{padding:4px 0}
-.slider-row{display:flex;align-items:center;gap:12px}
-.slider-row input[type=range]{flex:1}
-.slider-val{font-size:16px;font-weight:500;min-width:20px;color:var(--color-text-primary);text-align:right}
-.slider-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--color-text-tertiary);margin-top:3px}
-.gen-btn{width:100%;padding:14px;font-size:15px;font-weight:500;border-radius:var(--border-radius-lg);border:none;background:var(--color-text-primary);color:var(--color-background-primary);cursor:pointer;margin-top:1.5rem;transition:opacity 0.15s}
-.gen-btn:hover{opacity:0.85}
-.divider{border:none;border-top:0.5px solid var(--color-border-tertiary);margin:1.5rem 0}
-.week-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
-.week-nav-title{font-size:17px;font-weight:500;color:var(--color-text-primary)}
-.back-btn{font-size:13px;padding:6px 14px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-secondary);cursor:pointer}
-.back-btn:hover{background:var(--color-background-secondary)}
-.daily-bar{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--color-text-secondary);line-height:1.6}
-.daily-bar strong{color:var(--color-text-primary);font-weight:500}
-.day-card{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);margin-bottom:10px;background:var(--color-background-primary);overflow:hidden}
-.day-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer;user-select:none}
-.day-head:hover{background:var(--color-background-secondary)}
-.day-left{display:flex;align-items:center;gap:10px}
-.day-name{font-size:15px;font-weight:500;color:var(--color-text-primary)}
-.day-pill{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
-.pill-football{background:var(--color-background-success);color:var(--color-text-success)}
-.pill-gym{background:var(--color-background-info);color:var(--color-text-info)}
-.pill-recover{background:var(--color-background-warning);color:var(--color-text-warning)}
-.pill-rest{background:var(--color-background-secondary);color:var(--color-text-secondary)}
-.day-chevron{font-size:12px;color:var(--color-text-secondary);transition:transform 0.2s}
-.day-chevron.open{transform:rotate(180deg)}
-.day-body{display:none;padding:0 14px 14px;border-top:0.5px solid var(--color-border-tertiary)}
-.day-body.open{display:block}
-.session-block{margin-top:12px}
-.session-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--color-text-secondary);margin-bottom:6px}
-.session-item{font-size:13px;color:var(--color-text-primary);padding:4px 0;border-bottom:0.5px solid var(--color-border-tertiary);line-height:1.5}
-.session-item:last-child{border-bottom:none}
-.session-item .dur{color:var(--color-text-secondary);font-size:12px;margin-left:6px}
-.rehab-bar{background:var(--color-background-danger);border-radius:var(--border-radius-md);padding:7px 10px;font-size:12px;color:var(--color-text-danger);margin-top:10px;font-weight:500}
-.ed-block{margin-top:10px;background:var(--color-background-warning);border-radius:var(--border-radius-md);padding:10px 12px}
-.ed-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--color-text-warning);margin-bottom:4px}
-.ed-text{font-size:13px;color:var(--color-text-primary);line-height:1.5}
-.juggle-card{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px;margin-bottom:14px;background:var(--color-background-primary)}
-.juggle-title{font-size:14px;font-weight:500;margin-bottom:10px;color:var(--color-text-primary)}
-.juggle-trick{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-size:13px}
-.juggle-trick:last-child{border-bottom:none}
-.juggle-dots{display:flex;gap:4px}
-.dot{width:10px;height:10px;border-radius:50%;border:0.5px solid var(--color-border-secondary);cursor:pointer}
-.dot.filled{background:var(--color-text-success);border-color:transparent}
-.dot.stall{background:var(--color-text-danger);border-color:transparent}
-.add-trick-row{display:flex;gap:8px;margin-top:10px}
-.add-trick-row input{flex:1;font-size:13px;padding:7px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);font-family:var(--font-sans)}
-.add-trick-row button{font-size:13px;padding:7px 14px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary);cursor:pointer;white-space:nowrap}
-.add-trick-row button:hover{background:var(--color-background-secondary)}
-.injury-card{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px;margin-bottom:14px;background:var(--color-background-primary)}
-.injury-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-size:13px;gap:8px}
-.injury-row:last-child{border-bottom:none}
-.inj-name{flex:1;color:var(--color-text-primary)}
-.inj-dots{display:flex;gap:3px}
-.inj-dot{width:10px;height:10px;border-radius:50%;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);cursor:pointer}
-.inj-dot.d1{background:#97C459}.inj-dot.d2{background:#EF9F27}.inj-dot.d3{background:#E24B4A}
-.section-title{font-size:13px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.05em;margin:1.2rem 0 0.8rem}
-textarea.note-input{width:100%;font-size:13px;padding:8px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);resize:none;min-height:60px;font-family:var(--font-sans);line-height:1.5;margin-top:8px}
-</style>
-
 <div class="app">
-<h2 class="sr-only">Weekly football program builder for jhnson</h2>
 
-<div id="screen-checkin" class="screen active">
-
-  <div class="q-block">
-    <div class="q-label">Step 1 of 4</div>
-    <div class="q-title">How is the body this week?</div>
-    <div class="chip-row" id="body-chips">
-      <div class="chip" data-val="good" onclick="pick(this,'body','sel-green')">Good — ready to go</div>
-      <div class="chip" data-val="niggle" onclick="pick(this,'body','sel-amber')">Niggle — manageable</div>
-      <div class="chip" data-val="injured" onclick="pick(this,'body','sel-red')">Injured — limited</div>
-      <div class="chip" data-val="recovery" onclick="pick(this,'body','sel-amber')">Heavy legs — need recovery</div>
+  <!-- CHECK-IN SCREEN -->
+  <div id="screen-checkin" class="screen active">
+    <div class="header">
+      <h1>jhnson program</h1>
+      <span class="sub">weekly check-in</span>
     </div>
-  </div>
 
-  <div class="q-block">
-    <div class="q-label">Step 2 of 4</div>
-    <div class="q-title">Where is the niggle / injury? (skip if fine)</div>
-    <div class="chip-row" id="inj-chips">
-      <div class="chip" data-val="none" onclick="pickMulti(this,'inj')">None</div>
-      <div class="chip" data-val="groin" onclick="pickMulti(this,'inj')">Groin</div>
-      <div class="chip" data-val="hamstring" onclick="pickMulti(this,'inj')">Hamstring</div>
-      <div class="chip" data-val="hip" onclick="pickMulti(this,'inj')">Hip flexor</div>
-      <div class="chip" data-val="knee" onclick="pickMulti(this,'inj')">Knee</div>
-      <div class="chip" data-val="ankle" onclick="pickMulti(this,'inj')">Ankle</div>
-      <div class="chip" data-val="back" onclick="pickMulti(this,'inj')">Lower back</div>
-    </div>
-  </div>
-
-  <div class="q-block">
-    <div class="q-label">Step 3 of 4</div>
-    <div class="q-title">What do you want to prioritise this week?</div>
-    <div class="chip-row" id="focus-chips">
-      <div class="chip" data-val="1v1" onclick="pickMulti(this,'focus')">1v1 / beating players</div>
-      <div class="chip" data-val="leftfoot" onclick="pickMulti(this,'focus')">Left foot</div>
-      <div class="chip" data-val="crossing" onclick="pickMulti(this,'focus')">Crossing</div>
-      <div class="chip" data-val="finishing" onclick="pickMulti(this,'focus')">Finishing</div>
-      <div class="chip" data-val="pressing" onclick="pickMulti(this,'focus')">Pressing / intensity</div>
-      <div class="chip" data-val="strength" onclick="pickMulti(this,'focus')">Strength / power</div>
-      <div class="chip" data-val="conditioning" onclick="pickMulti(this,'focus')">Conditioning / fitness</div>
-      <div class="chip" data-val="mental" onclick="pickMulti(this,'focus')">Mental game</div>
-    </div>
-  </div>
-
-  <div class="q-block">
-    <div class="q-label">Step 4 of 4</div>
-    <div class="q-title">What does this week look like?</div>
-    <div class="chip-row" id="week-chips">
-      <div class="chip" data-val="normal" onclick="pick(this,'week','sel')">Normal week</div>
-      <div class="chip" data-val="busy" onclick="pick(this,'week','sel')">Busy / stressful</div>
-      <div class="chip" data-val="free" onclick="pick(this,'week','sel')">Lots of free time</div>
-    </div>
-    <div style="margin-top:12px">
-      <div class="q-label" style="margin-bottom:6px">Sleep this week</div>
-      <div class="chip-row" id="sleep-chips">
-        <div class="chip" data-val="early" onclick="pick(this,'sleep','sel-blue')">Early riser (before 5am)</div>
-        <div class="chip" data-val="mixed" onclick="pick(this,'sleep','sel-blue')">Mixed — some early some late</div>
-        <div class="chip" data-val="late" onclick="pick(this,'sleep','sel-blue')">Need to sleep in</div>
+    <div class="q-block">
+      <div class="q-step">Step 1 of 4</div>
+      <div class="q-title">How is the body this week?</div>
+      <div class="chip-row" id="body-chips">
+        <div class="chip" data-val="good" onclick="pick(this,'body','sel-green')">Good — ready to go</div>
+        <div class="chip" data-val="niggle" onclick="pick(this,'body','sel-amber')">Niggle — manageable</div>
+        <div class="chip" data-val="injured" onclick="pick(this,'body','sel-red')">Injured — limited</div>
+        <div class="chip" data-val="recovery" onclick="pick(this,'body','sel-amber')">Heavy legs — need recovery</div>
       </div>
     </div>
-    <div style="margin-top:12px">
-      <div class="q-label" style="margin-bottom:6px">Wednesday Powerleague this week?</div>
-      <div class="chip-row" id="pl-chips">
-        <div class="chip" data-val="yes" onclick="pick(this,'pl','sel-green')">Yes</div>
-        <div class="chip" data-val="no" onclick="pick(this,'pl','sel')">No</div>
+
+    <div class="q-block">
+      <div class="q-step">Step 2 of 4</div>
+      <div class="q-title">Where is the niggle / injury? (skip if fine)</div>
+      <div class="chip-row" id="inj-chips">
+        <div class="chip" data-val="none" onclick="pickMulti(this,'inj')">None</div>
+        <div class="chip" data-val="groin" onclick="pickMulti(this,'inj')">Groin</div>
+        <div class="chip" data-val="hamstring" onclick="pickMulti(this,'inj')">Hamstring</div>
+        <div class="chip" data-val="hip" onclick="pickMulti(this,'inj')">Hip flexor</div>
+        <div class="chip" data-val="knee" onclick="pickMulti(this,'inj')">Knee</div>
+        <div class="chip" data-val="ankle" onclick="pickMulti(this,'inj')">Ankle</div>
+        <div class="chip" data-val="back" onclick="pickMulti(this,'inj')">Lower back</div>
       </div>
     </div>
+
+    <div class="q-block">
+      <div class="q-step">Step 3 of 4</div>
+      <div class="q-title">What do you want to prioritise this week?</div>
+      <div class="chip-row" id="focus-chips">
+        <div class="chip" data-val="1v1" onclick="pickMulti(this,'focus')">1v1 / taking people on</div>
+        <div class="chip" data-val="leftfoot" onclick="pickMulti(this,'focus')">Left foot</div>
+        <div class="chip" data-val="shooting" onclick="pickMulti(this,'focus')">Shooting</div>
+        <div class="chip" data-val="crossing" onclick="pickMulti(this,'focus')">Crossing</div>
+        <div class="chip" data-val="pressing" onclick="pickMulti(this,'focus')">Pressing / intensity</div>
+        <div class="chip" data-val="strength" onclick="pickMulti(this,'focus')">Strength / power</div>
+        <div class="chip" data-val="conditioning" onclick="pickMulti(this,'focus')">Conditioning</div>
+        <div class="chip" data-val="mental" onclick="pickMulti(this,'focus')">Mental game</div>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-step">Step 4 of 4</div>
+      <div class="q-title">What does this week look like?</div>
+      <div class="chip-row" id="week-chips">
+        <div class="chip" data-val="normal" onclick="pick(this,'week','sel')">Normal week</div>
+        <div class="chip" data-val="busy" onclick="pick(this,'week','sel')">Busy / stressful</div>
+        <div class="chip" data-val="free" onclick="pick(this,'week','sel')">Lots of free time</div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="q-step" style="margin-bottom:6px">Sleep this week</div>
+        <div class="chip-row" id="sleep-chips">
+          <div class="chip" data-val="early" onclick="pick(this,'sleep','sel-blue')">5am starts — good</div>
+          <div class="chip" data-val="mixed" onclick="pick(this,'sleep','sel-blue')">Mixed</div>
+          <div class="chip" data-val="late" onclick="pick(this,'sleep','sel-blue')">Need to sleep in</div>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="q-step" style="margin-bottom:6px">Wednesday Powerleague?</div>
+        <div class="chip-row" id="pl-chips">
+          <div class="chip" data-val="yes" onclick="pick(this,'pl','sel-green')">Yes</div>
+          <div class="chip" data-val="no" onclick="pick(this,'pl','sel')">No</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="gen-btn" onclick="generateWeek()">Build my week →</button>
   </div>
 
-  <button class="gen-btn" onclick="generateWeek()">Build my week</button>
-</div>
+  <!-- WEEK SCREEN -->
+  <div id="screen-week" class="screen">
+    <div class="week-nav">
+      <div class="week-nav-title">This week</div>
+      <button class="back-btn" onclick="goBack()">← Edit</button>
+    </div>
 
-<div id="screen-week" class="screen">
-  <div class="week-nav">
-    <div class="week-nav-title">This week</div>
-    <button class="back-btn" onclick="goBack()">Edit check-in</button>
-  </div>
+    <div class="nonneg">
+      <strong>Every day:</strong> Ball mastery at home before leaving (10 min) · Rehab non-negotiable · Coffee pre-training · 5 min mental (rotate daily: visualisation → match study → breathing)
+    </div>
 
-  <div class="daily-bar">
-    <strong>Every day without exception:</strong> 10 min ball mastery + juggling trick · 10 min core · 10 min mobility/stretch · 5 min mental (rotate: visualisation / match study / breathing)
-  </div>
+    <div id="injury-banner-slot"></div>
+    <div id="week-days"></div>
 
-  <div id="week-days"></div>
+    <hr>
 
-  <hr class="divider">
+    <div class="section-title">Juggling trick tracker</div>
+    <div class="juggle-card">
+      <div class="juggle-title">Tap dots each week — white: not tried · green: progressing · red: stalling</div>
+      <div id="juggle-list"></div>
+      <div class="add-trick-row">
+        <input id="new-trick" placeholder="Add trick..." />
+        <button onclick="addTrick()">Add</button>
+      </div>
+    </div>
 
-  <div class="section-title">Juggling trick tracker</div>
-  <div class="juggle-card">
-    <div class="juggle-title">Rate each trick this week (tap dots: white = not tried, green = progressing, red = stalling)</div>
-    <div id="juggle-list"></div>
-    <div class="add-trick-row">
-      <input id="new-trick" placeholder="Add this week's trick..." />
-      <button onclick="addTrick()">Add</button>
+    <div class="section-title">Injury / niggle log</div>
+    <div class="injury-card">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Green = fine · amber = niggle · red = painful</div>
+      <div id="injury-list"></div>
+      <textarea class="note-input" id="inj-notes" placeholder="How did it feel this week..."></textarea>
+      <button class="small-btn" style="margin-top:8px" onclick="saveNotes()">Save notes</button>
     </div>
   </div>
 
-  <div class="section-title">Injury / niggle log</div>
-  <div class="injury-card">
-    <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px">Rate each area (green = fine, amber = niggle, red = painful)</div>
-    <div id="injury-list"></div>
-    <textarea class="note-input" id="inj-notes" placeholder="Notes on how it felt this week..."></textarea>
-    <button style="margin-top:8px;font-size:13px;padding:6px 14px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary);cursor:pointer" onclick="saveNotes()">Save notes</button>
-  </div>
 </div>
-</div>
-
 <script>
-const state = {body:'',inj:[],focus:[],week:'',sleep:'',pl:'',tricks:[],injuries:{groin:0,hamstring:0,hip:0,knee:0,ankle:0}};
+const state = { body:'', inj:[], focus:[], week:'', sleep:'', pl:'' };
 let saved = {};
-try{ saved = JSON.parse(localStorage.getItem('jhnson_prog')||'{}'); }catch(e){}
-if(saved.tricks) state.tricks = saved.tricks;
-if(saved.injuries) state.injuries = saved.injuries;
+try { saved = JSON.parse(localStorage.getItem('jhnson_prog') || '{}'); } catch(e) {}
+if (saved.tricks) state.tricks = saved.tricks;
+if (saved.injuries) state.injuries = saved.injuries;
+if (!state.tricks) state.tricks = [];
+if (!state.injuries) state.injuries = {};
 
-function pick(el,group,cls){
-  document.querySelectorAll('#'+group+'-chips .chip').forEach(c=>{c.className='chip';});
-  el.classList.add('chip',cls);
-  state[group]=el.dataset.val;
+function pick(el, group, cls) {
+  document.querySelectorAll('#' + group + '-chips .chip').forEach(c => c.className = 'chip');
+  el.classList.add('chip', cls);
+  state[group] = el.dataset.val;
 }
-function pickMulti(el,group){
-  const arr = group==='inj'?state.inj:state.focus;
-  const v=el.dataset.val;
-  if(v==='none'){state.inj=[];document.querySelectorAll('#inj-chips .chip').forEach(c=>c.className='chip');el.classList.add('chip','sel');return;}
-  const i=arr.indexOf(v);
-  if(i>-1){arr.splice(i,1);el.className='chip';}
-  else{arr.push(v);el.classList.add('chip','sel-blue');}
-}
-
-const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-
-const PROGRAMS = {
-  Monday:{
-    type:'football',
-    pill:'pill-football',
-    pillText:'Kickabout',
-    full:[
-      {label:'Pre-session (room)', items:['15 min ball mastery — toe taps, inside/outside, sole rolls','5 min juggling trick practice','5 min dynamic warm-up']},
-      {label:'FFA kickabout', items:['1v1 focus — ask for extra reps before/after session','Work left foot on every touch drill','Track: how many times did you beat your player 1v1?']},
-      {label:'Post-session gym (45 min)', items:['Power clean or hang clean 4x4 (explosive focus)','Single leg RDL 3x8 each — hip/hamstring resilience','Box jump 3x5 — pure power, full reset each rep','Core: 3x weighted Russian twist + 3x ab wheel']},
-      {label:'Evening (room)', items:['10 min yoga / hip flexor routine','5 min visualisation — replaying a successful 1v1']}
-    ],
-    ed:'Ball mastery 10 min in room. That is the only thing you need to do today.'
-  },
-  Tuesday:{
-    type:'gym',
-    pill:'pill-gym',
-    pillText:'Gym + pitch',
-    full:[
-      {label:'Morning gym (45–55 min) — power/pull', items:['Bent over row 4x5 heavy','Pull up 4x6','Single arm dumbbell row 3x10','Lat pulldown 3x12','Face pulls 3x15 — shoulder health']},
-      {label:'Lunchtime pitch (45 min)', items:['Crossing drill — 20 crosses each foot, aim for far post','Left foot long pass practice — 15m, 25m, 35m range','Set piece routine: 5 free kicks right, 5 left']},
-      {label:'Rehab (non-negotiable, 10 min)', items:['6x Copenhagens each side','8x Hip flexion with kettlebell each side','Isometric split squat hold 3x30s']},
-      {label:'Evening (room)', items:['20 min match study — watch a winger/wingback you want to emulate','10 min stretch + mobility']}
-    ],
-    ed:'10 min rehab. Copenhagen holds and hip flexion. Nothing else required.'
-  },
-  Wednesday:{
-    type:'football',
-    pill:'pill-football',
-    pillText:'Kickabout',
-    full:[
-      {label:'Morning (room)', items:['10 min ball mastery + trick work','10 min yoga — focus on groin/hip mobility']},
-      {label:'FFA kickabout', items:['1v1 scenarios — use the session deliberately','Crossing on the run — both feet where possible','Pressing triggers — when to press, when to hold']},
-      {label:'Post kickabout gym (30 min — lighter if Powerleague later)', items:['Push: bench press 3x5, overhead press 3x8','Tricep work 2x12','No heavy legs today']},
-      {label:'Evening (room)', items:['5 min breathing / box breathing pre-Powerleague or wind-down','Stretch calves, hip flexors, groin']}
-    ],
-    edPL:'Kickabout + Powerleague only. No gym. Rehab before sleep — 5 min hip flexion and Copenhagen holds.',
-    ed:'Ball mastery 10 min. Stretch 10 min. That is it.'
-  },
-  Thursday:{
-    type:'gym',
-    pill:'pill-gym',
-    pillText:'Gym + recovery',
-    full:[
-      {label:'Morning gym (50 min) — legs / power', items:['Box squat 4x5 — explosive up, controlled down','Bulgarian split squat 3x8 each — this is your single leg work','Jump squat 3x5 — after squats, don\'t skip this','Lunge (barbell) 3x10','Single leg calf raise 3x15']},
-      {label:'Rehab (10 min, always)', items:['6x Copenhagens each side','8x Hip flexion with kettlebell','Good morning 3x12 — hamstring length + strength']},
-      {label:'Lunchtime pitch (if available)', items:['1v1 practice — set up cones, defender and attacker, 10 min focused reps','Finishing — 15 shots from different angles, mix feet','Corners: 10 each foot — measure how many into the danger zone']},
-      {label:'Evening (room)', items:['15 min yoga — hip openers + hamstring focus','5 min visualisation — next trial or stepping up in level']}
-    ],
-    ed:'One thing: Box squat 4x5 at the gym. 20 minutes. Done.'
-  },
-  Friday:{
-    type:'football',
-    pill:'pill-football',
-    pillText:'Kickabout',
-    full:[
-      {label:'Pre-session (room)', items:['10 min ball mastery — left foot dominant today','Juggling trick — 5 min deliberate practice','Dynamic stretch 5 min']},
-      {label:'FFA kickabout', items:['Left foot emphasis — every time you have an option, use the left','1v1: take the first touch past your player when receiving','Track: left foot touches vs right foot touches']},
-      {label:'Post-session (light gym or room)', items:['Core: bird dog 3x10, lying leg raise 3x15, plank 3x45s','Rehab: Copenhagen holds 6 each side, arabesque 6 each side']},
-      {label:'Evening (room)', items:['Match study 20 min — opponent or league above analysis','Stretch and wind down — no heavy work tomorrow']}
-    ],
-    ed:'Kickabout only. Left foot every touch you can. Go home.'
-  },
-  Saturday:{
-    type:'recover',
-    pill:'pill-recover',
-    pillText:'Active recovery',
-    full:[
-      {label:'Morning (room)', items:['20 min yoga — full body, not rushed','10 min meditation — breath focus, no performance pressure','Ball mastery 10 min — light, enjoyable, no pressure']},
-      {label:'Optional gym (if feeling good)', items:['Push day — bench 3x8, lateral raise 3x12, overhead press 3x10','Keep it under 40 min, moderate weight only']},
-      {label:'Mental work', items:['30 min match study — pick one player at Step 4/5 to analyse','Write 3 things you did well this week','Write 1 thing to fix next week']}
-    ],
-    ed:'20 min yoga in the room. Put on a match in the background. Nothing else.'
-  },
-  Sunday:{
-    type:'rest',
-    pill:'pill-rest',
-    pillText:'Rest',
-    full:[
-      {label:'Real rest', items:['Sleep in if you need it — recovery is training','Passive stretch if body feels tight — 10 min max','Ball mastery 10 min if you feel like it — no pressure']},
-      {label:'Mental prep for the week', items:['Review this week — what got done, what didn\'t','Set intention for Monday','Visualisation: 5 min — arriving at a new club, training with better players']}
-    ],
-    ed:'Rest. Seriously. That is the programme today.'
+function pickMulti(el, group) {
+  const arr = group === 'inj' ? state.inj : state.focus;
+  const v = el.dataset.val;
+  if (v === 'none') {
+    state.inj = [];
+    document.querySelectorAll('#inj-chips .chip').forEach(c => c.className = 'chip');
+    el.classList.add('chip', 'sel');
+    return;
   }
+  const i = arr.indexOf(v);
+  if (i > -1) { arr.splice(i, 1); el.className = 'chip'; }
+  else { arr.push(v); el.classList.add('chip', 'sel-blue'); }
+}
+
+// ─── PROGRAM DATA ────────────────────────────────────────────────────────────
+const WEEK = [
+  {
+    day: 'Monday',
+    pill: 'pill-pitch',
+    pillText: 'Pitch + Gym',
+    injured: 'pill-gym',
+    injuredText: 'Gym only',
+    slots: [
+      { time: '5:00am', label: 'At home', items: [
+        'Coffee ☕ — drink before leaving, not after arriving',
+        'Ball mastery 10 min — sole rolls, inside/outside, toe taps',
+        'Dynamic activation — leg swings, hip circles, 5 min'
+      ]},
+      { time: '5:20am', label: 'Pitch — technical + conditioning', items: [
+        '1v1 warm-up: 20 solo runs through cones (5m gate) — both feet <span class="tag tag-conf">CONFIDENCE</span>',
+        'Shooting: 20 shots — right foot near post, 10m. Then 20 left foot same spot <span class="tag tag-key">NON-NEG</span>',
+        'Sprint set: 6×40m at 90% effort, 90s rest between. Full recovery only',
+        'Shooting: 20 shots — right foot far post, 15m. Mix in instep and side-foot',
+        'Finish: 5 min ball mastery left foot only — sole rolls, inside cuts'
+      ]},
+      { time: '6:50am', label: 'Gym — lower body power', items: [
+        'Box squat 4×4 — explosive up, full reset each rep',
+        'Bulgarian split squat 3×8 each — slow down, drive up',
+        'Jump squat 3×5 — after squats, pure power',
+        'Single leg RDL 3×8 each — hip resilience, controlled',
+        'Core: ab wheel 3×8 + bird dog 3×10'
+      ]},
+    ],
+    rehab: 'Copenhagens 3×6 each side · Hip flexion 3×8 each · Isometric split squat hold 3×30s',
+    ed: 'Ball mastery at home, 10 min. Then the 20 shooting reps on pitch — nothing else required today.',
+    nap: true
+  },
+  {
+    day: 'Tuesday',
+    pill: 'pill-gym',
+    pillText: 'Gym + conditioning',
+    injured: 'pill-gym',
+    injuredText: 'Upper body only',
+    slots: [
+      { time: '5:00am', label: 'At home', items: [
+        'Coffee ☕',
+        'Ball mastery 10 min',
+        'Activation — shoulder rotations, hip circles'
+      ]},
+      { time: '5:20am', label: 'Pitch — football conditioning', items: [
+        'Agility ladder or cone work: 10 min (high knees, lateral shuffles, in-out)',
+        'Short sprint set: 10×20m — max effort, walk back recovery',
+        'Change of direction: 5×T-drill, 5×L-run — this is your conditioning, not 5ks',
+        '1v1 finishing drill: dribble from halfway, shoot — 15 reps each foot <span class="tag tag-conf">CONFIDENCE</span>'
+      ]},
+      { time: '6:30am', label: 'Gym — pull / upper', items: [
+        'Bent over row 4×5 heavy',
+        'Pull up 4×6 — weighted if easy',
+        'Single arm DB row 3×10',
+        'Face pulls 3×15 — shoulder health, never skip',
+        'Lat pulldown 3×12'
+      ]},
+    ],
+    rehab: 'Copenhagens 3×6 each side · Hip flexion 3×8 each · Good morning 3×12',
+    ed: 'Gym only. Pull session, 40 min. That\'s it.',
+    nap: true
+  },
+  {
+    day: 'Wednesday',
+    pill: 'pill-pitch',
+    pillText: 'Pitch + Gym',
+    injured: 'pill-gym',
+    injuredText: 'Gym + rehab',
+    slots: [
+      { time: '5:00am', label: 'At home', items: [
+        'Coffee ☕',
+        'Ball mastery 10 min — left foot emphasis today',
+        'Hip mobility — 5 min: pigeon, hip flexor stretch, groin'
+      ]},
+      { time: '5:20am', label: 'Pitch — left foot + crossing', items: [
+        'Left foot only: 15 min ball mastery — no right foot, no exceptions <span class="tag tag-key">NON-NEG</span>',
+        'Left foot passing: 20×15m passes, 20×25m, 10×35m — quality not power',
+        'Left foot crossing: 20 crosses from wide left — aim far post. Count how many hit the zone',
+        'Shooting left foot: 20 shots 12m out, side-foot then instep — both corners <span class="tag tag-conf">CONFIDENCE</span>',
+        '1v1 drill: set up 2 cones 6m apart, drive at the cone and cut — 20 reps left foot initiated'
+      ]},
+      { time: '6:50am', label: 'Gym — push (moderate — kickabout tonight)', items: [
+        'Bench press 3×5 — heavy but not max',
+        'Overhead press 3×8',
+        'Dips 3×10',
+        'Lateral raise 3×12',
+        'Tricep pushdown 2×15 — flush'
+      ]},
+      { time: 'Evening', label: 'FFA kickabout — play with intent', items: [
+        'Take people on — every time you get the ball in space, go at your man <span class="tag tag-conf">CONFIDENCE</span>',
+        'Shoot when the opportunity is there — you don\'t need a perfect chance',
+        'Track mentally: how many 1v1s did you attempt? Goal is more than last week'
+      ]},
+    ],
+    rehab: 'Copenhagens 3×6 each side · Hip flexion 3×8 each · Isometric split squat 3×30s',
+    ed: 'Left foot ball mastery 10 min at home. Turn up to the kickabout. That\'s the whole day.',
+    nap: false
+  },
+  {
+    day: 'Thursday',
+    pill: 'pill-gym',
+    pillText: 'Heavy gym',
+    injured: 'pill-gym',
+    injuredText: 'Upper body only',
+    slots: [
+      { time: '5:00am', label: 'At home', items: [
+        'Coffee ☕',
+        'Ball mastery 10 min',
+        'Full activation — this is a heavy day'
+      ]},
+      { time: '5:20am', label: 'Gym — heavy lower + power', items: [
+        'Back squat 5×3 — heaviest of the week, no compromise on depth',
+        'Box squat 3×4 — speed focus, same weight as Monday',
+        'Barbell lunge 3×10 each — long stride, upright torso',
+        'Single leg calf raise 3×15 — ankle stability',
+        'Loaded carry: farmers walk 3×30m — grip and stability'
+      ]},
+      { time: '6:50am', label: 'Optional pitch — finishing only', items: [
+        'If you have energy: 20 shots only, different angles and distances <span class="tag tag-conf">CONFIDENCE</span>',
+        'If not: skip — Thursday is a heavy gym day, protect the legs'
+      ]},
+    ],
+    rehab: 'Copenhagens 3×6 each side · Hip flexion 3×8 · Good morning 3×12 — hamstring length',
+    ed: 'Heavy squat. 5×3. Go home.',
+    nap: true
+  },
+  {
+    day: 'Friday',
+    pill: 'pill-pitch',
+    pillText: 'Pitch + Gym',
+    injured: 'pill-gym',
+    injuredText: 'Gym only',
+    slots: [
+      { time: '5:00am', label: 'At home', items: [
+        'Coffee ☕',
+        'Ball mastery 10 min — left foot dominant',
+        'Light activation only — end of week'
+      ]},
+      { time: '5:20am', label: 'Pitch — 1v1 and shooting emphasis', items: [
+        '1v1 drill: 5m gate, 25 runs — use a move each time, don\'t just sprint through <span class="tag tag-conf">CONFIDENCE</span>',
+        'Shooting: 30 shots — vary distance (10m, 15m, 20m), both feet, both corners <span class="tag tag-key">NON-NEG</span>',
+        'Sprint finisher: 4×40m at max effort — short and sharp',
+        'Visualisation on pitch: 5 min, stand in your position, picture taking someone on and scoring'
+      ]},
+      { time: '6:50am', label: 'Gym — full body moderate', items: [
+        'Deadlift 3×5 — not max, controlled',
+        'Bench press 3×8',
+        'Pull up 3×6',
+        'Core: plank 3×45s, leg raise 3×15',
+        'Stretch: 10 min — hip flexors, hamstrings, groin'
+      ]},
+      { time: 'Evening', label: 'FFA kickabout — apply the week', items: [
+        'One job: take your man on at least 5 times this session <span class="tag tag-conf">CONFIDENCE</span>',
+        'Shoot every time you\'re within 20m and not tightly marked',
+        'After: note down how many 1v1s you attempted vs last Friday'
+      ]},
+    ],
+    rehab: 'Copenhagens 3×6 each side · Hip flexion 3×8 · Arabesque balance 3×6 each',
+    ed: 'Kickabout only. Take your man on every time you get the ball. Go home.',
+    nap: false
+  },
+  {
+    day: 'Saturday',
+    pill: 'pill-recover',
+    pillText: 'Active recovery',
+    injured: 'pill-recover',
+    injuredText: 'Active recovery',
+    slots: [
+      { time: 'Morning', label: 'Recovery + mental work', items: [
+        'Sleep in if the body needs it — recovery is training',
+        '20 min yoga — full body, not rushed',
+        'Ball mastery 10 min in the room — light, enjoyable, no pressure'
+      ]},
+      { time: 'Afternoon', label: 'Match study (30 min — do this)', items: [
+        'Pick one player from Step 4/5 to watch: Michael Cheek (Step 4 striker movement), Brendan Kiernan (Step 3 winger), or any winger at your target clubs',
+        'Watch with intent: how do they receive? When do they take people on? Where do they shoot from?',
+        'Write 3 things you noticed and 1 you\'re going to try next week'
+      ]},
+      { time: 'Evening', label: 'Review the week', items: [
+        'How many 1v1 attempts across the kickabouts?',
+        'How many shots this week total?',
+        'What improved? What didn\'t?'
+      ]},
+    ],
+    rehab: 'Copenhagens 3×6 each side · Hip flexion 3×8 · Full groin and hamstring stretch 10 min',
+    ed: '20 min yoga. Put a match on. Nothing else.',
+    nap: false
+  },
+  {
+    day: 'Sunday',
+    pill: 'pill-rest',
+    pillText: 'Rest',
+    injured: 'pill-rest',
+    injuredText: 'Rest',
+    slots: [
+      { time: 'Morning', label: 'Real rest', items: [
+        'Sleep in — no alarm',
+        'If body feels tight: 10 min passive stretch only',
+        'Ball mastery 10 min if you feel like it — no pressure, no routine'
+      ]},
+      { time: 'Afternoon', label: 'Intentions for the week', items: [
+        '5 min visualisation: arriving at a new club, training with better players, taking someone on and scoring',
+        'Set one technical intention for Monday: what specific move are you working on this week?',
+        'Review your injury log — anything that needs flagging before Monday?'
+      ]},
+    ],
+    rehab: 'Copenhagens 3×6 each side — yes, even on Sunday. Hip flexion 3×8.',
+    ed: 'Rest. Seriously.',
+    nap: false
+  }
+];
+
+// ─── INJURED WEEK OVERLAY ────────────────────────────────────────────────────
+const INJURED_SLOTS = {
+  Monday: [
+    { time: '5:00am', label: 'At home', items: ['Coffee ☕', 'Upper body activation only — no lower body load', 'Ball mastery seated or stationary — inside/outside touches, no lunging'] },
+    { time: '5:30am', label: 'Gym — upper body only', items: ['Bench press 3×8', 'Pull up 3×6', 'Seated DB shoulder press 3×10', 'Face pulls 3×15', 'Arm work — curl, tricep, whatever'] },
+    { time: '7:00am', label: 'Rehab on pitch or room', items: ['Copenhagen holds 3×6 each — this is your pitch session today', 'Hip flexion 3×8 each', 'Isometric split squat 3×30s', 'Supine hip circles 2×10 each direction'] }
+  ],
+  Tuesday: [
+    { time: '5:00am', label: 'At home', items: ['Coffee ☕', 'Ball mastery — stationary, upper body focus'] },
+    { time: '5:30am', label: 'Gym — pull', items: ['Bent over row 4×5', 'Pull up 4×6', 'Single arm DB row 3×10', 'Face pulls 3×15', 'Lat pulldown 3×12'] }
+  ],
+  Wednesday: [
+    { time: '5:00am', label: 'At home', items: ['Coffee ☕', 'Ball mastery — left foot only, stationary'] },
+    { time: '5:30am', label: 'Gym — push', items: ['Bench press 3×5', 'Overhead press 3×8', 'Dips 3×10', 'Lateral raise 3×12'] },
+    { time: 'Evening', label: 'FFA kickabout — attend but manage', items: ['Go but protect the groin — no explosive changes of direction', 'Work in central areas where you can control your movement', 'Mental rep: watch and analyse rather than forcing it'] }
+  ],
+  Thursday: [
+    { time: '5:00am', label: 'At home', items: ['Coffee ☕', 'Ball mastery — stationary'] },
+    { time: '5:30am', label: 'Gym — upper body only (no lower load)', items: ['Bench press 3×5', 'Bent over row 4×5', 'Pull up 3×6', 'Face pulls 3×15', 'Core: ab wheel 3×8, dead bug 3×10 each'] }
+  ],
+  Friday: [
+    { time: '5:00am', label: 'At home', items: ['Coffee ☕', 'Ball mastery'] },
+    { time: '5:30am', label: 'Gym — full upper, light', items: ['Deadlift: SKIP this week', 'Bench press 3×8', 'Pull up 3×6', 'Core only lower body: dead bug, bird dog'] },
+    { time: 'Evening', label: 'FFA kickabout — attend, manage load', items: ['Same as Wednesday — attend but protect', 'Mental work: how many times did you spot the 1v1 opportunity even if you couldn\'t take it?'] }
+  ]
 };
 
-function generateWeek(){
-  const body=state.body,inj=state.inj,focus=state.focus,wk=state.week,sl=state.sleep,pl=state.pl;
+function generateWeek() {
+  const { body, inj, focus, week, sleep, pl } = state;
+  const isInjured = body === 'injured';
+  const isBusy = week === 'busy';
+
   document.getElementById('screen-checkin').classList.remove('active');
   document.getElementById('screen-week').classList.add('active');
 
-  const container=document.getElementById('week-days');
-  container.innerHTML='';
+  // Injury banner
+  const bannerSlot = document.getElementById('injury-banner-slot');
+  if (isInjured && inj.length) {
+    bannerSlot.innerHTML = `<div class="injury-banner">⚠️ Injured week (${inj.join(', ')}) — pitch sessions replaced with rehab + upper body. Rehab is the main event right now. Every Copenhagen hold is an investment.</div>`;
+  } else { bannerSlot.innerHTML = ''; }
 
-  DAYS.forEach((day,i)=>{
-    const prog=PROGRAMS[day];
-    const card=document.createElement('div');
-    card.className='day-card';
+  const container = document.getElementById('week-days');
+  container.innerHTML = '';
 
-    let sessions=[...prog.full];
+  WEEK.forEach(prog => {
+    const card = document.createElement('div');
+    card.className = 'day-card';
 
-    if(body==='injured'&&inj.length){
-      sessions=sessions.map(s=>{
-        if(s.label.toLowerCase().includes('gym')||s.label.toLowerCase().includes('legs')){
-          return {...s,items:s.items.map(item=>item.includes('squat')||item.includes('lunge')||item.includes('jump')?'[Modified — avoid load on '+inj.join('/')+'] '+item:item)};
-        }
-        return s;
-      });
+    const pillClass = isInjured ? prog.injured : prog.pill;
+    const pillText = isInjured ? prog.injuredText : (prog.day === 'Wednesday' && pl === 'yes' ? prog.pillText + ' + PL' : prog.pillText);
+
+    // Choose slots
+    let slots;
+    if (isInjured && INJURED_SLOTS[prog.day]) {
+      slots = INJURED_SLOTS[prog.day];
+    } else {
+      slots = [...prog.slots];
+      // Focus modifiers
+      if (focus.includes('shooting')) {
+        slots = slots.map(s => {
+          if (s.label.toLowerCase().includes('pitch')) {
+            return { ...s, items: ['SHOOTING WEEK: add 20 extra shots at the start of this session — right foot, then left', ...s.items] };
+          }
+          return s;
+        });
+      }
+      if (focus.includes('1v1')) {
+        slots = slots.map(s => {
+          if (s.label.toLowerCase().includes('pitch') || s.label.toLowerCase().includes('kickabout')) {
+            return { ...s, items: ['1V1 WEEK: set up a cone gate before every session. 20 solo 1v1 runs before anything else', ...s.items] };
+          }
+          return s;
+        });
+      }
     }
 
-    if(focus.includes('1v1')&&prog.type==='football'){
-      sessions=sessions.map(s=>{
-        if(s.label.toLowerCase().includes('kickabout')||s.label.toLowerCase().includes('pitch')){
-          return {...s,items:['FOCUS THIS SESSION: 1v1 — arrive 10 min early, set up 2 cones 5m apart, do 20 solo 1v1 dribble runs before session starts',...s.items]};
-        }
-        return s;
-      });
+    // Busy week — trim to essentials
+    if (isBusy) { slots = slots.slice(0, 2); }
+
+    // Sleep-in weekend
+    if (sleep === 'late' && (prog.day === 'Saturday' || prog.day === 'Sunday')) {
+      slots = [{ time: 'Morning', label: 'Sleep in', items: ['No alarm. Recovery is the session.', 'Ball mastery 10 min when you wake up naturally', 'Rehab before bed — non-negotiable'] }];
     }
 
-    if(focus.includes('leftfoot')&&prog.type==='football'){
-      sessions=sessions.map(s=>{
-        if(s.label.toLowerCase().includes('kickabout')||s.label.toLowerCase().includes('pitch')){
-          return {...s,items:['LEFT FOOT WEEK: aim for 40%+ left foot touches this session',...s.items]};
-        }
-        return s;
-      });
-    }
+    const napNote = prog.nap && !isInjured ? '<div style="font-size:11px;color:var(--text3);margin-top:8px">💤 Nap window: 12–1pm if available — use it on heavy days</div>' : '';
 
-    if(sl==='late'&&(i===5||i===6)){
-      sessions=[{label:'Sleep in',items:['No alarm. Recovery is the session today.','If you wake naturally, do 10 min ball mastery and stretch in the room','Nothing else required']}];
-    }
-
-    if(sl==='busy'||wk==='busy'){
-      sessions=sessions.slice(0,2);
-    }
-
-    const plNote=pl==='yes'&&day==='Wednesday'?' + Powerleague':'';
-    const edText=(day==='Wednesday'&&pl==='yes')?prog.edPL||prog.ed:prog.ed;
-
-    card.innerHTML=`
-    <div class="day-head" onclick="toggleDay(this)">
-      <div class="day-left">
-        <span class="day-name">${day}</span>
-        <span class="day-pill ${prog.pill}">${prog.pillText}${plNote}</span>
+    card.innerHTML = `
+      <div class="day-head" onclick="toggleDay(this)">
+        <div class="day-left">
+          <span class="day-name">${prog.day}</span>
+          <span class="day-pill ${pillClass}">${pillText}</span>
+        </div>
+        <span class="day-chevron">▼</span>
       </div>
-      <span class="day-chevron">&#9660;</span>
-    </div>
-    <div class="day-body">
-      ${sessions.map(s=>`
-        <div class="session-block">
-          <div class="session-label">${s.label}</div>
-          ${s.items.map(item=>`<div class="session-item">${item}</div>`).join('')}
-        </div>`).join('')}
-      <div class="rehab-bar">Rehab non-negotiable: Copenhagens 6 each side · Hip flexion 8 each side · Isometric split squat hold 30s each</div>
-      <div class="ed-block">
-        <div class="ed-label">Low energy / executive dysfunction day</div>
-        <div class="ed-text">${edText}</div>
-      </div>
-    </div>`;
+      <div class="day-body">
+        ${slots.map(s => `
+          <div class="time-row">
+            <div class="time-label">${s.time}</div>
+            <div class="session-block">
+              <div class="session-label">${s.label}</div>
+              ${s.items.map(item => `<div class="session-item">${item}</div>`).join('')}
+            </div>
+          </div>`).join('')}
+        ${napNote}
+        <div class="rehab-bar">🔴 Rehab: ${prog.rehab}</div>
+        <div class="ed-block">
+          <div class="ed-label">Low energy / executive dysfunction</div>
+          <div class="ed-text">${prog.ed}</div>
+        </div>
+      </div>`;
+
     container.appendChild(card);
   });
 
@@ -427,89 +612,74 @@ function generateWeek(){
   renderInjuries();
 }
 
-function toggleDay(head){
-  const body=head.nextElementSibling;
-  const chev=head.querySelector('.day-chevron');
+function toggleDay(head) {
+  const body = head.nextElementSibling;
+  const chev = head.querySelector('.day-chevron');
   body.classList.toggle('open');
   chev.classList.toggle('open');
 }
-
-function goBack(){
+function goBack() {
   document.getElementById('screen-week').classList.remove('active');
   document.getElementById('screen-checkin').classList.add('active');
 }
 
-const DEFAULT_TRICKS=['Around the world','Neck stall','Shoulder stall','Around the world (L foot)','Crossover juggle'];
-
-function renderJuggling(){
-  if(!state.tricks.length) state.tricks=DEFAULT_TRICKS.map(t=>({name:t,weeks:[]}));
-  const el=document.getElementById('juggle-list');
-  el.innerHTML=state.tricks.map((t,ti)=>`
+// ─── JUGGLING TRACKER ────────────────────────────────────────────────────────
+const DEFAULT_TRICKS = ['Around the world','Neck stall','Shoulder stall','Around the world (L foot)','Crossover juggle'];
+function renderJuggling() {
+  if (!state.tricks.length) state.tricks = DEFAULT_TRICKS.map(t => ({ name: t, weeks: [] }));
+  document.getElementById('juggle-list').innerHTML = state.tricks.map((t, ti) => `
     <div class="juggle-trick">
-      <span>${t.name}</span>
+      <span class="trick-name">${t.name}</span>
       <div class="juggle-dots">
-        ${[0,1,2,3].map(wi=>{
-          const val=t.weeks[wi]||0;
-          const cls=val===1?'dot filled':val===2?'dot stall':'dot';
-          return `<div class="${cls}" title="Week ${wi+1}" onclick="cycleDot(${ti},${wi})"></div>`;
+        ${[0,1,2,3].map(wi => {
+          const v = t.weeks[wi] || 0;
+          return `<div class="dot ${v===1?'filled':v===2?'stall':''}" title="Week ${wi+1}" onclick="cycleDot(${ti},${wi})"></div>`;
         }).join('')}
       </div>
     </div>`).join('');
 }
-
-function cycleDot(ti,wi){
-  const t=state.tricks[ti];
-  const cur=t.weeks[wi]||0;
-  t.weeks[wi]=(cur+1)%3;
-  saveLocal();
-  renderJuggling();
+function cycleDot(ti, wi) {
+  const t = state.tricks[ti];
+  t.weeks[wi] = ((t.weeks[wi] || 0) + 1) % 3;
+  saveLocal(); renderJuggling();
+}
+function addTrick() {
+  const inp = document.getElementById('new-trick');
+  const v = inp.value.trim();
+  if (!v) return;
+  state.tricks.push({ name: v, weeks: [] });
+  inp.value = '';
+  saveLocal(); renderJuggling();
 }
 
-function addTrick(){
-  const inp=document.getElementById('new-trick');
-  const v=inp.value.trim();
-  if(!v)return;
-  state.tricks.push({name:v,weeks:[]});
-  inp.value='';
-  saveLocal();
-  renderJuggling();
-}
-
-const INJ_AREAS=['Groin','Hamstring','Hip flexor','Knee','Ankle','Lower back'];
-
-function renderInjuries(){
-  const el=document.getElementById('injury-list');
-  el.innerHTML=INJ_AREAS.map(area=>{
-    const key=area.toLowerCase().replace(' ','_');
-    const val=state.injuries[key]||0;
+// ─── INJURY LOG ──────────────────────────────────────────────────────────────
+const INJ_AREAS = ['Groin','Hamstring','Hip flexor','Knee','Ankle','Lower back'];
+function renderInjuries() {
+  document.getElementById('injury-list').innerHTML = INJ_AREAS.map(area => {
+    const key = area.toLowerCase().replace(' ', '_');
+    const val = state.injuries[key] || 0;
     return `<div class="injury-row">
       <span class="inj-name">${area}</span>
       <div class="inj-dots">
-        <div class="inj-dot${val===1?' d1':''}" onclick="setInj('${key}',1)" title="Fine"></div>
-        <div class="inj-dot${val===2?' d2':''}" onclick="setInj('${key}',2)" title="Niggle"></div>
-        <div class="inj-dot${val===3?' d3':''}" onclick="setInj('${key}',3)" title="Painful"></div>
+        ${[1,2,3].map(n => `<div class="inj-dot${val===n?' d'+n:''}" onclick="setInj('${key}',${n})"></div>`).join('')}
       </div>
     </div>`;
   }).join('');
 }
-
-function setInj(key,val){
-  state.injuries[key]=state.injuries[key]===val?0:val;
-  saveLocal();
-  renderInjuries();
+function setInj(key, val) {
+  state.injuries[key] = state.injuries[key] === val ? 0 : val;
+  saveLocal(); renderInjuries();
 }
-
-function saveNotes(){
-  saved.injNotes=document.getElementById('inj-notes').value;
+function saveNotes() {
+  saved.injNotes = document.getElementById('inj-notes').value;
   saveLocal();
 }
-
-function saveLocal(){
-  saved.tricks=state.tricks;
-  saved.injuries=state.injuries;
-  localStorage.setItem('jhnson_prog',JSON.stringify(saved));
+function saveLocal() {
+  saved.tricks = state.tricks;
+  saved.injuries = state.injuries;
+  localStorage.setItem('jhnson_prog', JSON.stringify(saved));
 }
-
-if(saved.injNotes){setTimeout(()=>{const el=document.getElementById('inj-notes');if(el)el.value=saved.injNotes;},100);}
+if (saved.injNotes) { setTimeout(() => { const el = document.getElementById('inj-notes'); if (el) el.value = saved.injNotes; }, 100); }
 </script>
-</body></html>
+</body>
+</html>
