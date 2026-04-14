@@ -205,10 +205,23 @@
     <div class="week-nav-title">Today</div>
     <div style="display:flex;gap:8px">
       <button class="back-btn" onclick="openWeekView()">View week</button>
+      <button class="back-btn" onclick="openHistoryView()">History</button>
       <button class="back-btn" onclick="startRebuildWeek()">Rebuild week</button>
     </div>
   </div>
   <div id="today-main"></div>
+</div>
+
+<!-- HISTORY SCREEN -->
+<div id="screen-history" class="screen">
+  <div class="week-nav">
+    <div class="week-nav-title">History / Review</div>
+    <div style="display:flex;gap:8px">
+      <button class="back-btn" onclick="openTodayView()">Today</button>
+      <button class="back-btn" onclick="openWeekView()">Week</button>
+    </div>
+  </div>
+  <div id="history-main"></div>
 </div>
 
 <!-- CHECK-IN SCREEN -->
@@ -288,6 +301,7 @@
     <div class="week-nav-title">This week</div>
     <div style="display:flex;gap:8px">
       <button class="back-btn" onclick="openTodayView()">Today</button>
+      <button class="back-btn" onclick="openHistoryView()">History</button>
       <button class="back-btn" onclick="startRebuildWeek()">Rebuild week</button>
     </div>
   </div>
@@ -335,7 +349,7 @@
 
 </div>
 <script>
-const STORAGE_KEYS = {prog:'jhnson_prog',daily:'jhnson_daily',logs:'jhnson_session_logs',reflections:'jhnson_reflections',habits:'jhnson_habits',injuryProfiles:'jhnson_injury_profiles',recoveryCaps:'jhnson_recovery_capabilities'};
+const STORAGE_KEYS = {prog:'jhnson_prog',daily:'jhnson_daily',dailyHistory:'jhnson_daily_history',logs:'jhnson_session_logs',reflections:'jhnson_reflections',habits:'jhnson_habits',injuryProfiles:'jhnson_injury_profiles',recoveryCaps:'jhnson_recovery_capabilities'};
 const state = {body:'',inj:[],focus:[],week:'',sleep:'',pl:''};
 let saved = {};
 let todayDaily = null;
@@ -386,6 +400,12 @@ if(!state.tricks) state.tricks = [];
 if(!state.injuries) state.injuries = {};
 const daily = safeRead(STORAGE_KEYS.daily, null);
 if(daily && daily.date===getLocalDateKey()) todayDaily = daily;
+let dailyHistory = safeRead(STORAGE_KEYS.dailyHistory, []);
+if(!Array.isArray(dailyHistory)) dailyHistory = [];
+if(daily && daily.date && !dailyHistory.some(dh=>dh.date===daily.date)){
+  dailyHistory.push(daily);
+  safeWrite(STORAGE_KEYS.dailyHistory, dailyHistory);
+}
 let sessionLogs = safeRead(STORAGE_KEYS.logs, []);
 if(!Array.isArray(sessionLogs)) sessionLogs = [];
 let reflections = safeRead(STORAGE_KEYS.reflections, []);
@@ -449,8 +469,15 @@ function saveDailyCheckin(){
     pain: dailyState.pain
   };
   safeWrite(STORAGE_KEYS.daily, entry);
+  upsertDailyHistory(entry);
   todayDaily = entry;
   routeFromDaily();
+}
+function upsertDailyHistory(entry){
+  const idx = dailyHistory.findIndex(d=>d.date===entry.date);
+  if(idx>-1) dailyHistory[idx] = entry;
+  else dailyHistory.push(entry);
+  safeWrite(STORAGE_KEYS.dailyHistory, dailyHistory);
 }
 
 function routeFromDaily(){
@@ -997,6 +1024,63 @@ function openWeekAndReflect(day){
 }
 function startRebuildWeek(){
   showScreen('screen-checkin');
+}
+function openHistoryView(){
+  renderHistory();
+  showScreen('screen-history');
+}
+function renderHistory(){
+  const sortDesc = (arr)=>[...arr].sort((a,b)=>a.date<b.date?1:-1);
+  const daily7 = sortDesc(dailyHistory).slice(0,7);
+  const logs7 = sortDesc(sessionLogs).slice(0,7);
+  const refs7 = sortDesc(reflections).slice(0,7);
+  const dates14 = lastNDates(14);
+  const avgSleep = daily7.length ? (daily7.reduce((n,d)=>n+Number(d.sleep||0),0)/daily7.length).toFixed(1) : '—';
+  const avgPain = daily7.length ? (daily7.reduce((n,d)=>n+Number(d.pain||0),0)/daily7.length).toFixed(1) : '—';
+  const completed7 = logs7.filter(l=>l.completed_status==='completed').length;
+  const ballHits = lastNDates(7).filter(date=>getHabitsEntry(date).ball_mastery).length;
+  const activeRec = RECOVERY_AREAS
+    .map(a=>({label:a.label,p:injuryProfiles[a.key],c:recoveryCaps[a.key]}))
+    .filter(x=>x.p && x.p.active);
+
+  function habitRow(key){
+    return dates14.map(date=>`<span style="width:9px;height:9px;border-radius:2px;border:0.5px solid var(--color-border-secondary);display:inline-block;background:${cellColor(getHabitsEntry(date)[key])}" title="${date}"></span>`).join('');
+  }
+  function limiterText(c){
+    const blockers = [];
+    if(!c.cut) blockers.push('no cut');
+    if(!c.strike_ball) blockers.push('no strike');
+    if(!c.jog) blockers.push('no jog');
+    return blockers.length ? blockers.join(', ') : 'none';
+  }
+  const el = document.getElementById('history-main');
+  if(!el) return;
+  el.innerHTML = `
+    <div class="juggle-card">
+      <div style="font-size:13px;line-height:1.7">
+        <div><strong>Avg sleep (7):</strong> ${avgSleep}</div>
+        <div><strong>Avg pain (7):</strong> ${avgPain}</div>
+        <div><strong>Sessions completed (7 logs):</strong> ${completed7}</div>
+        <div><strong>Ball mastery hits (7 days):</strong> ${ballHits}</div>
+      </div>
+    </div>
+    <div class="section-title">Recent daily check-ins</div>
+    <div class="injury-card">${daily7.length?daily7.map(d=>`<div class="injury-row"><span class="inj-name">${d.date} · Sleep ${d.sleep}h · E${d.energy} · S${d.soreness} · P${d.pain}</span></div>`).join(''):'<div class="injury-row"><span class="inj-name">No daily check-ins yet.</span></div>'}</div>
+    <div class="section-title">Recent session logs</div>
+    <div class="injury-card">${logs7.length?logs7.map(l=>`<div class="injury-row"><span class="inj-name">${l.date} · ${l.day_name} · ${logStatusText(l.completed_status)} · ${l.duration_minutes} min · RPE ${l.rpe}</span></div>`).join(''):'<div class="injury-row"><span class="inj-name">No session logs yet.</span></div>'}</div>
+    <div class="section-title">Recent reflections</div>
+    <div class="injury-card">${refs7.length?refs7.map(r=>`<div class="injury-row"><span class="inj-name">${r.date} · ${r.day_name} · ${reflectionText(r.rating)}${r.confidence?` · C${r.confidence}`:''} · ${r.action_point||'—'}</span></div>`).join(''):'<div class="injury-row"><span class="inj-name">No reflections yet.</span></div>'}</div>
+    <div class="section-title">Habit consistency snapshot</div>
+    <div class="juggle-card">
+      <div class="injury-row"><span class="inj-name">Ball mastery</span><span style="display:flex;gap:3px">${habitRow('ball_mastery')}</span></div>
+      <div class="injury-row"><span class="inj-name">Skill learning</span><span style="display:flex;gap:3px">${habitRow('skill_learning')}</span></div>
+      <div class="injury-row"><span class="inj-name">Rehab</span><span style="display:flex;gap:3px">${habitRow('rehab')}</span></div>
+      <div class="injury-row"><span class="inj-name">Mobility</span><span style="display:flex;gap:3px">${habitRow('mobility')}</span></div>
+      <div class="injury-row"><span class="inj-name">Mental work</span><span style="display:flex;gap:3px">${habitRow('mental_work')}</span></div>
+    </div>
+    <div class="section-title">Recovery snapshot</div>
+    <div class="injury-card">${activeRec.length?activeRec.map(r=>`<div class="injury-row"><span class="inj-name">${r.label} · Day ${daysSince(r.p.start_date)||'?'} · Stage ${r.p.stage} · Limits: ${limiterText(r.c)}</span></div>`).join(''):'<div class="injury-row"><span class="inj-name">No active recovery profile.</span></div>'}</div>
+  `;
 }
 // TODAY VIEW END
 
