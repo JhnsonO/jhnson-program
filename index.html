@@ -111,6 +111,13 @@
     .ed-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--color-text-warning);margin-bottom:4px}
     .ed-text{font-size:13px;color:var(--color-text-primary);line-height:1.5}
 
+    /* today polish */
+    .today-hero{background:linear-gradient(135deg,var(--color-background-secondary),var(--color-background-primary));border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px 14px;margin-bottom:10px}
+    .today-hero h2{font-size:17px;font-weight:600;color:var(--color-text-primary);margin-bottom:4px}
+    .today-hero p{font-size:13px;color:var(--color-text-secondary);line-height:1.5}
+    .today-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+    .today-actions .save-btn{margin-top:0}
+
     .divider{border:none;border-top:0.5px solid var(--color-border-tertiary);margin:1.5rem 0}
     .section-title{font-size:13px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.05em;margin:1.2rem 0 0.8rem}
 
@@ -974,17 +981,22 @@ function renderToday(){
   const refLine = dayReflection
     ? `${reflectionText(dayReflection.rating)}${dayReflection.confidence?` · Confidence ${dayReflection.confidence}`:''}`
     : 'No reflection yet.';
+  const logPrompt = dayLog ? 'Logged and tracked.' : 'Not logged yet — log right after training.';
+  const reflectionPrompt = dayReflection ? 'Reflection saved.' : 'No reflection yet — 60 seconds is enough.';
 
   const el = document.getElementById('today-main');
   if(!el) return;
   el.innerHTML = `
-    <div class="daily-bar"><strong>Today:</strong> ${day} · ${statsLine}</div>
+    <div class="today-hero">
+      <h2>${day} execution</h2>
+      <p>${todayDaily ? `Readiness set. ${statsLine}` : 'Complete your daily check-in to unlock readiness-guided adjustments.'}</p>
+    </div>
     <div class="daily-bar"><strong>Recovery status:</strong> ${recoveryAdjusted.statusText}${recoveryAdjusted.limiter?` · Main limiter: ${recoveryAdjusted.limiter}`:''}</div>
     ${recoveryAdjusted.adjustments && recoveryAdjusted.adjustments.length ? `<div class="daily-bar"><strong>Recovery adjustments:</strong> ${[...new Set(recoveryAdjusted.adjustments)].join(' · ')}</div>` : ''}
     <div class="day-card">
       <div class="day-head">
         <div class="day-left">
-          <span class="day-name">${day} session</span>
+          <span class="day-name">Today’s session</span>
           <span class="day-pill ${plan?plan.pill:'pill-rest'}">${plan?plan.pillText:'Plan unavailable'}</span>
         </div>
       </div>
@@ -1015,12 +1027,13 @@ function renderToday(){
         Ball mastery: ${habitStreak('ball_mastery')} days · Skill learning: ${habitStreak('skill_learning')} days · Rehab: ${habitStreak('rehab')} days
       </div>
     </div>
-    <div class="daily-bar"><strong>Today log:</strong> ${logLine}</div>
-    <div class="daily-bar"><strong>Today reflection:</strong> ${refLine}</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <div class="daily-bar"><strong>Today log:</strong> ${logLine} <span style="color:var(--color-text-secondary)">${logPrompt}</span></div>
+    <div class="daily-bar"><strong>Today reflection:</strong> ${refLine} <span style="color:var(--color-text-secondary)">${reflectionPrompt}</span></div>
+    <div class="today-actions">
       <button class="save-btn" onclick="openWeekView()">View week</button>
       <button class="save-btn" onclick="openWeekAndExpand('${day}')">${dayLog?'Edit log':'Log session'}</button>
       <button class="save-btn" onclick="openWeekAndReflect('${day}')">${dayReflection?'Edit reflection':'Reflect'}</button>
+      <button class="save-btn" onclick="openHistoryView()">History</button>
       <button class="save-btn" onclick="startRebuildWeek()">Rebuild week</button>
     </div>
   `;
