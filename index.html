@@ -332,7 +332,7 @@
 
 </div>
 <script>
-const STORAGE_KEYS = {prog:'jhnson_prog',daily:'jhnson_daily',logs:'jhnson_session_logs',reflections:'jhnson_reflections'};
+const STORAGE_KEYS = {prog:'jhnson_prog',daily:'jhnson_daily',logs:'jhnson_session_logs',reflections:'jhnson_reflections',habits:'jhnson_habits'};
 const state = {body:'',inj:[],focus:[],week:'',sleep:'',pl:''};
 let saved = {};
 let todayDaily = null;
@@ -387,6 +387,8 @@ let sessionLogs = safeRead(STORAGE_KEYS.logs, []);
 if(!Array.isArray(sessionLogs)) sessionLogs = [];
 let reflections = safeRead(STORAGE_KEYS.reflections, []);
 if(!Array.isArray(reflections)) reflections = [];
+let habits = safeRead(STORAGE_KEYS.habits, []);
+if(!Array.isArray(habits)) habits = [];
 
 function pick(el,group,cls){
   document.querySelectorAll('#'+group+'-chips .chip').forEach(c=>{c.className='chip';});
@@ -558,6 +560,64 @@ function saveReflection(day){
 }
 // REFLECTION END
 
+// HABITS START
+function habitsTemplate(date){
+  return {date,ball_mastery:false,skill_learning:false,rehab:false,mobility:false,mental_work:false};
+}
+function getHabitsEntry(date){
+  return habits.find(h=>h.date===date) || habitsTemplate(date);
+}
+function upsertHabits(entry){
+  const idx = habits.findIndex(h=>h.date===entry.date);
+  if(idx>-1) habits[idx] = entry;
+  else habits.push(entry);
+  safeWrite(STORAGE_KEYS.habits, habits);
+}
+function toggleHabit(key){
+  const date = getLocalDateKey();
+  const entry = getHabitsEntry(date);
+  entry[key] = !entry[key];
+  upsertHabits(entry);
+  renderToday();
+}
+function habitCount(entry){
+  return ['ball_mastery','skill_learning','rehab','mobility','mental_work'].filter(k=>entry[k]).length;
+}
+function habitStreak(key){
+  let streak = 0;
+  let d = parseLocalDate(getLocalDateKey());
+  while(true){
+    const date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const entry = habits.find(h=>h.date===date);
+    if(!entry || !entry[key]) break;
+    streak += 1;
+    d.setDate(d.getDate()-1);
+  }
+  return streak;
+}
+function sessionStateForDate(date){
+  const logs = sessionLogs.filter(l=>l.date===date);
+  if(logs.some(l=>l.completed_status==='completed')) return 'completed';
+  if(logs.some(l=>l.completed_status==='shortened')) return 'shortened';
+  return 'skipped';
+}
+function lastNDates(n){
+  const out = [];
+  const d = parseLocalDate(getLocalDateKey());
+  for(let i=0;i<n;i++){
+    const x = new Date(d);
+    x.setDate(d.getDate()-i);
+    out.push(`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`);
+  }
+  return out.reverse();
+}
+function cellColor(state){
+  if(state==='shortened') return 'var(--color-text-warning)';
+  if(state===true || state==='completed') return 'var(--color-text-success)';
+  return 'transparent';
+}
+// HABITS END
+
 // DASHBOARD START
 function parseLocalDate(dateStr){
   if(!dateStr) return null;
@@ -616,6 +676,9 @@ function renderDashboard(){
   const confs = weekRefs.map(r=>Number(r.confidence)).filter(n=>!Number.isNaN(n) && n>0);
   const avgConfNum = confs.length ? confs.reduce((a,b)=>a+b,0)/confs.length : null;
   const streak = currentStreakDays();
+  const todayHabits = getHabitsEntry(getLocalDateKey());
+  const standardsDone = habitCount(todayHabits);
+  const ballStreak = habitStreak('ball_mastery');
   const stats = {logs:weekLogs.length,reflections:weekRefs.length,skipped,avgRpeNum};
   const insight = dashboardInsight(stats);
 
@@ -642,6 +705,8 @@ function renderDashboard(){
       <div><strong>Reflections:</strong> ${weekRefs.length}</div>
       <div><strong>Avg confidence:</strong> ${avgConfNum===null?'—':avgConfNum.toFixed(1)}</div>
       <div><strong>Current streak:</strong> ${streak} days</div>
+      <div><strong>Daily standards:</strong> ${standardsDone}/5 today</div>
+      <div><strong>Ball mastery streak:</strong> ${ballStreak} days</div>
     </div>
     <div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:var(--color-background-secondary);font-size:12px;color:var(--color-text-secondary)">
       ${insight}
@@ -692,6 +757,19 @@ function renderToday(){
   const sessions = applyDailyAdjustmentsForDay(baseSessions, edText, day);
   const dayLog = getEntryForDateDay(sessionLogs, today, day);
   const dayReflection = getEntryForDateDay(reflections, today, day);
+  const todayHabits = getHabitsEntry(today);
+  const habitsDone = habitCount(todayHabits);
+  const habitsMsg = habitsDone===5 ? 'Daily standard hit.' : (habitsDone===0 ? 'Start with one.' : '');
+  const dates14 = lastNDates(14);
+  function rowCells(type){
+    return dates14.map(date=>{
+      const h = getHabitsEntry(date);
+      const state = type==='session'
+        ? sessionStateForDate(date)
+        : (type==='ball_mastery' ? h.ball_mastery : type==='skill_learning' ? h.skill_learning : h.rehab);
+      return `<span title="${date}" style="width:9px;height:9px;border-radius:2px;border:0.5px solid var(--color-border-secondary);display:inline-block;background:${cellColor(state)}"></span>`;
+    }).join('');
+  }
   const statsLine = todayDaily
     ? `Sleep ${todayDaily.sleep}h · Energy ${todayDaily.energy} · Soreness ${todayDaily.soreness} · Pain ${todayDaily.pain}`
     : 'No daily check-in for today yet.';
@@ -715,6 +793,27 @@ function renderToday(){
         <div class="time-block">
           ${sessions.map(s=>`<div class="time-row"><div class="time-stamp">${s.time}</div><div class="time-content"><div class="time-label">${s.label}</div>${s.items.map(i=>`<div class="time-item">${i}</div>`).join('')}</div></div>`).join('')}
         </div>
+      </div>
+    </div>
+    <div class="section-title" style="margin-top:12px">Daily non-negotiables</div>
+    <div class="juggle-card">
+      <div class="chip-row">
+        <div class="chip ${todayHabits.ball_mastery?'sel':''}" onclick="toggleHabit('ball_mastery')">Ball mastery</div>
+        <div class="chip ${todayHabits.skill_learning?'sel':''}" onclick="toggleHabit('skill_learning')">Skill learning</div>
+        <div class="chip ${todayHabits.rehab?'sel':''}" onclick="toggleHabit('rehab')">Rehab</div>
+        <div class="chip ${todayHabits.mobility?'sel':''}" onclick="toggleHabit('mobility')">Mobility</div>
+        <div class="chip ${todayHabits.mental_work?'sel':''}" onclick="toggleHabit('mental_work')">Mental work</div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--color-text-secondary)"><strong>${habitsDone}/5 done today</strong>${habitsMsg?` · ${habitsMsg}`:''}</div>
+    </div>
+    <div class="section-title">Consistency</div>
+    <div class="juggle-card">
+      <div class="injury-row"><span class="inj-name">Ball mastery</span><span style="display:flex;gap:3px">${rowCells('ball_mastery')}</span></div>
+      <div class="injury-row"><span class="inj-name">Skill learning</span><span style="display:flex;gap:3px">${rowCells('skill_learning')}</span></div>
+      <div class="injury-row"><span class="inj-name">Rehab</span><span style="display:flex;gap:3px">${rowCells('rehab')}</span></div>
+      <div class="injury-row"><span class="inj-name">Session completed</span><span style="display:flex;gap:3px">${rowCells('session')}</span></div>
+      <div style="margin-top:8px;font-size:12px;color:var(--color-text-secondary)">
+        Ball mastery: ${habitStreak('ball_mastery')} days · Skill learning: ${habitStreak('skill_learning')} days · Rehab: ${habitStreak('rehab')} days
       </div>
     </div>
     <div class="daily-bar"><strong>Today log:</strong> ${logLine}</div>
