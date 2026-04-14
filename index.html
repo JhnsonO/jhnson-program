@@ -144,8 +144,88 @@
 <body>
 <div class="app">
 
+<!-- // DAILY CHECK-IN START -->
+<div id="screen-daily" class="screen">
+  <div class="q-block">
+    <div class="q-label">Daily check-in</div>
+    <div class="q-title">How did you wake up today?</div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">Sleep (hours)</div>
+    <input id="daily-sleep" type="number" min="0" max="14" step="0.5" placeholder="e.g. 7.5" style="width:100%;font-size:14px;padding:10px 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);font-family:var(--font-sans)">
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">Energy (1–5)</div>
+    <div class="chip-row" id="daily-energy-chips">
+      <div class="chip" data-val="1" onclick="pickDaily(this,'energy')">1</div>
+      <div class="chip" data-val="2" onclick="pickDaily(this,'energy')">2</div>
+      <div class="chip" data-val="3" onclick="pickDaily(this,'energy')">3</div>
+      <div class="chip" data-val="4" onclick="pickDaily(this,'energy')">4</div>
+      <div class="chip" data-val="5" onclick="pickDaily(this,'energy')">5</div>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">Soreness (1–5)</div>
+    <div class="chip-row" id="daily-soreness-chips">
+      <div class="chip" data-val="1" onclick="pickDaily(this,'soreness')">1</div>
+      <div class="chip" data-val="2" onclick="pickDaily(this,'soreness')">2</div>
+      <div class="chip" data-val="3" onclick="pickDaily(this,'soreness')">3</div>
+      <div class="chip" data-val="4" onclick="pickDaily(this,'soreness')">4</div>
+      <div class="chip" data-val="5" onclick="pickDaily(this,'soreness')">5</div>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">Pain (0–10)</div>
+    <div class="chip-row" id="daily-pain-chips">
+      <div class="chip" data-val="0" onclick="pickDaily(this,'pain')">0</div>
+      <div class="chip" data-val="1" onclick="pickDaily(this,'pain')">1</div>
+      <div class="chip" data-val="2" onclick="pickDaily(this,'pain')">2</div>
+      <div class="chip" data-val="3" onclick="pickDaily(this,'pain')">3</div>
+      <div class="chip" data-val="4" onclick="pickDaily(this,'pain')">4</div>
+      <div class="chip" data-val="5" onclick="pickDaily(this,'pain')">5</div>
+      <div class="chip" data-val="6" onclick="pickDaily(this,'pain')">6</div>
+      <div class="chip" data-val="7" onclick="pickDaily(this,'pain')">7</div>
+      <div class="chip" data-val="8" onclick="pickDaily(this,'pain')">8</div>
+      <div class="chip" data-val="9" onclick="pickDaily(this,'pain')">9</div>
+      <div class="chip" data-val="10" onclick="pickDaily(this,'pain')">10</div>
+    </div>
+  </div>
+
+  <button class="gen-btn" onclick="saveDailyCheckin()">Continue →</button>
+</div>
+<!-- // DAILY CHECK-IN END -->
+
+<!-- TODAY SCREEN -->
+<div id="screen-today" class="screen">
+  <div class="week-nav">
+    <div class="week-nav-title">Today</div>
+    <div style="display:flex;gap:8px">
+      <button class="back-btn" onclick="openWeekView()">View week</button>
+      <button class="back-btn" onclick="openHistoryView()">History</button>
+      <button class="back-btn" onclick="startRebuildWeek()">Rebuild week</button>
+    </div>
+  </div>
+  <div id="today-main"></div>
+</div>
+
+<!-- HISTORY SCREEN -->
+<div id="screen-history" class="screen">
+  <div class="week-nav">
+    <div class="week-nav-title">History / Review</div>
+    <div style="display:flex;gap:8px">
+      <button class="back-btn" onclick="openTodayView()">Today</button>
+      <button class="back-btn" onclick="openWeekView()">Week</button>
+    </div>
+  </div>
+  <div id="history-main"></div>
+</div>
+
 <!-- CHECK-IN SCREEN -->
-<div id="screen-checkin" class="screen active">
+<div id="screen-checkin" class="screen">
 
   <div class="q-block">
     <div class="q-label">Step 1 of 4</div>
@@ -212,17 +292,30 @@
     </div>
   </div>
 
-  <button class="gen-btn" onclick="generateWeek()">Build my week →</button>
+  <button class="gen-btn" onclick="buildWeekPlan()">Build my week →</button>
 </div>
 
 <!-- WEEK SCREEN -->
 <div id="screen-week" class="screen">
   <div class="week-nav">
     <div class="week-nav-title">This week</div>
-    <button class="back-btn" onclick="goBack()">Edit check-in</button>
+    <div style="display:flex;gap:8px">
+      <button class="back-btn" onclick="openTodayView()">Today</button>
+      <button class="back-btn" onclick="openHistoryView()">History</button>
+      <button class="back-btn" onclick="startRebuildWeek()">Rebuild week</button>
+    </div>
   </div>
 
   <div id="injury-banner-wrap"></div>
+
+  <div class="daily-bar">
+    <strong id="today-bar">Today:</strong>
+  </div>
+  <div id="today-log-wrap"></div>
+  <div id="today-reflection-wrap"></div>
+
+  <div class="section-title">Dashboard</div>
+  <div class="juggle-card" id="dashboard-card"></div>
 
   <div class="daily-bar">
     <strong>Every day without exception:</strong> Ball mastery at home before leaving (10 min) · Rehab (Copenhagens + hip flexion + iso hold) · Mental (rotate: visualisation / match study / breathing, 5 min)
@@ -249,17 +342,118 @@
     <textarea class="note-input" id="inj-notes" placeholder="Notes on how it felt this week..."></textarea>
     <button class="save-btn" onclick="saveNotes()">Save notes</button>
   </div>
+
+  <div class="section-title">Recovery tracker</div>
+  <div class="injury-card" id="recovery-tracker"></div>
 </div>
 
 </div>
 <script>
+const STORAGE_KEYS = {prog:'jhnson_prog',daily:'jhnson_daily',dailyHistory:'jhnson_daily_history',logs:'jhnson_session_logs',reflections:'jhnson_reflections',habits:'jhnson_habits',injuryProfiles:'jhnson_injury_profiles',recoveryCaps:'jhnson_recovery_capabilities'};
 const state = {body:'',inj:[],focus:[],week:'',sleep:'',pl:''};
 let saved = {};
-try{ saved = JSON.parse(localStorage.getItem('jhnson_prog')||'{}'); }catch(e){}
+let todayDaily = null;
+
+function safeRead(key, fallback){
+  try{
+    const raw = localStorage.getItem(key);
+    if(!raw) return fallback;
+    return JSON.parse(raw);
+  }catch(e){
+    return fallback;
+  }
+}
+function safeWrite(key, value){
+  try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){}
+}
+function dedupeBy(list, keyFn){
+  const map = new Map();
+  list.forEach(item=>{
+    const key = keyFn(item);
+    if(!key) return;
+    map.set(key, item);
+  });
+  return [...map.values()];
+}
+function getLocalDateKey(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function getWeekStartKey(){
+  const d = parseLocalDate(getLocalDateKey());
+  if(!d) return getLocalDateKey();
+  const offset = (d.getDay()+6)%7;
+  d.setDate(d.getDate()-offset);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function getTodayDayName(){
+  return DAYS[(new Date().getDay()+6)%7];
+}
+function hasCurrentWeekPlan(){
+  if(!saved.weekState || !saved.weekState.week_start) return false;
+  const wk = parseLocalDate(saved.weekState.week_start);
+  if(!wk) return false;
+  return saved.weekState.week_start===getWeekStartKey();
+}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if(el) el.classList.add('active');
+}
+
+saved = safeRead(STORAGE_KEYS.prog, {});
 if(saved.tricks) state.tricks = saved.tricks;
 if(saved.injuries) state.injuries = saved.injuries;
+if(saved.weekState && !saved.weekState.week_start) saved.weekState.week_start = getWeekStartKey();
+if(saved.weekState) Object.assign(state, saved.weekState);
 if(!state.tricks) state.tricks = [];
 if(!state.injuries) state.injuries = {};
+const daily = safeRead(STORAGE_KEYS.daily, null);
+if(daily && daily.date===getLocalDateKey()) todayDaily = daily;
+let dailyHistory = safeRead(STORAGE_KEYS.dailyHistory, []);
+if(!Array.isArray(dailyHistory)) dailyHistory = [];
+if(daily && daily.date && !dailyHistory.some(dh=>dh.date===daily.date)){
+  dailyHistory.push(daily);
+}
+let sessionLogs = safeRead(STORAGE_KEYS.logs, []);
+if(!Array.isArray(sessionLogs)) sessionLogs = [];
+let reflections = safeRead(STORAGE_KEYS.reflections, []);
+if(!Array.isArray(reflections)) reflections = [];
+let habits = safeRead(STORAGE_KEYS.habits, []);
+if(!Array.isArray(habits)) habits = [];
+const RECOVERY_AREAS = [
+  {key:'groin',label:'Groin'},
+  {key:'hamstring',label:'Hamstring'},
+  {key:'hip_flexor',label:'Hip flexor'},
+  {key:'knee',label:'Knee'},
+  {key:'ankle',label:'Ankle'},
+  {key:'lower_back',label:'Lower back'}
+];
+function defaultInjuryProfiles(){
+  const out = {};
+  RECOVERY_AREAS.forEach(a=>{ out[a.key] = {active:false,start_date:null,severity:0,stage:0}; });
+  return out;
+}
+function defaultRecoveryCaps(){
+  const out = {};
+  RECOVERY_AREAS.forEach(a=>{ out[a.key] = {walking:true,squeeze:false,bodyweight_squat:true,single_leg_load:false,jog:false,sprint:false,cut:false,strike_ball:false}; });
+  return out;
+}
+let injuryProfiles = {...defaultInjuryProfiles(), ...(safeRead(STORAGE_KEYS.injuryProfiles, {})||{})};
+let recoveryCaps = {...defaultRecoveryCaps(), ...(safeRead(STORAGE_KEYS.recoveryCaps, {})||{})};
+
+// light data integrity pass
+dailyHistory = dedupeBy(dailyHistory.filter(d=>d && d.date), d=>d.date);
+sessionLogs = dedupeBy(sessionLogs.filter(l=>l && l.date && l.day_name), l=>`${l.date}|${l.day_name}`);
+reflections = dedupeBy(reflections.filter(r=>r && r.date && r.day_name), r=>`${r.date}|${r.day_name}`);
+habits = dedupeBy(habits.filter(h=>h && h.date), h=>h.date);
+safeWrite(STORAGE_KEYS.dailyHistory, dailyHistory);
+safeWrite(STORAGE_KEYS.logs, sessionLogs);
+safeWrite(STORAGE_KEYS.reflections, reflections);
+safeWrite(STORAGE_KEYS.habits, habits);
 
 function pick(el,group,cls){
   document.querySelectorAll('#'+group+'-chips .chip').forEach(c=>{c.className='chip';});
@@ -274,6 +468,651 @@ function pickMulti(el,group){
   if(i>-1){arr.splice(i,1);el.className='chip';}
   else{arr.push(v);el.classList.add('chip','sel-blue');}
 }
+
+// // DAILY CHECK-IN START
+const dailyState = {energy:null,soreness:null,pain:null};
+function pickDaily(el,group){
+  document.querySelectorAll('#daily-'+group+'-chips .chip').forEach(c=>{c.className='chip';});
+  el.classList.add('chip','sel');
+  dailyState[group] = Number(el.dataset.val);
+}
+
+function saveDailyCheckin(){
+  const sleep = Number(document.getElementById('daily-sleep').value);
+  if(!sleep || dailyState.energy===null || dailyState.soreness===null || dailyState.pain===null){
+    alert('Please complete all daily check-in fields.');
+    return;
+  }
+  const entry = {
+    date: getLocalDateKey(),
+    sleep,
+    energy: dailyState.energy,
+    soreness: dailyState.soreness,
+    pain: dailyState.pain
+  };
+  safeWrite(STORAGE_KEYS.daily, entry);
+  upsertDailyHistory(entry);
+  todayDaily = entry;
+  routeFromDaily();
+}
+function upsertDailyHistory(entry){
+  const idx = dailyHistory.findIndex(d=>d.date===entry.date);
+  if(idx>-1) dailyHistory[idx] = entry;
+  else dailyHistory.push(entry);
+  safeWrite(STORAGE_KEYS.dailyHistory, dailyHistory);
+}
+
+function routeFromDaily(){
+  if(hasCurrentWeekPlan()) openTodayView();
+  else showScreen('screen-checkin');
+}
+// // DAILY CHECK-IN END
+
+// SESSION LOGGING START
+function logStatusClass(status){
+  if(status==='completed') return 'pill-football';
+  if(status==='shortened') return 'pill-recover';
+  return 'pill-injured';
+}
+function logStatusText(status){
+  if(status==='completed') return 'Completed';
+  if(status==='shortened') return 'Shortened';
+  if(status==='skipped') return 'Skipped';
+  return '';
+}
+function latestLogForDay(dayName){
+  const logs = sessionLogs.filter(l=>l.day_name===dayName);
+  if(!logs.length) return null;
+  return logs.sort((a,b)=>a.date<b.date?1:-1)[0];
+}
+function todayLogEntry(){
+  const today = getLocalDateKey();
+  const logs = sessionLogs.filter(l=>l.date===today);
+  return logs.length ? logs[0] : null;
+}
+function openLogPanel(day){
+  const panel = document.getElementById(`log-panel-${day}`);
+  if(!panel) return;
+  panel.style.display = panel.style.display==='none' ? 'block' : 'none';
+}
+function pickLogChip(day, group, value){
+  document.querySelectorAll(`#log-panel-${day} .${group}-chip`).forEach(c=>c.classList.remove('sel'));
+  const chip = document.getElementById(`log-${group}-${day}-${value}`);
+  if(chip) chip.classList.add('sel');
+  const panel = document.getElementById(`log-panel-${day}`);
+  panel.dataset[group] = String(value);
+}
+function saveSessionLog(day){
+  const panel = document.getElementById(`log-panel-${day}`);
+  if(!panel) return;
+  const completed_status = panel.dataset.status || '';
+  const duration_minutes = Number(document.getElementById(`log-duration-${day}`).value);
+  const rpe = Number(panel.dataset.rpe || 0);
+  const notes = document.getElementById(`log-notes-${day}`).value.trim();
+  if(!completed_status || !duration_minutes || !rpe){
+    alert('Please set status, duration, and RPE.');
+    return;
+  }
+  const entry = {
+    date: getLocalDateKey(),
+    day_name: day,
+    completed_status,
+    duration_minutes,
+    rpe,
+    notes
+  };
+  const idx = sessionLogs.findIndex(l=>l.date===entry.date && l.day_name===entry.day_name);
+  if(idx>-1) sessionLogs[idx] = entry;
+  else sessionLogs.push(entry);
+  safeWrite(STORAGE_KEYS.logs, sessionLogs);
+  generateWeek();
+}
+// SESSION LOGGING END
+
+// REFLECTION START
+function reflectionClass(rating){
+  if(rating==='green') return 'pill-football';
+  if(rating==='amber') return 'pill-recover';
+  return 'pill-injured';
+}
+function reflectionText(rating){
+  if(rating==='green') return 'Green';
+  if(rating==='amber') return 'Amber';
+  if(rating==='red') return 'Red';
+  return '';
+}
+function latestReflectionForDay(dayName){
+  const items = reflections.filter(r=>r.day_name===dayName);
+  if(!items.length) return null;
+  return items.sort((a,b)=>a.date<b.date?1:-1)[0];
+}
+function todayReflectionEntry(){
+  const today = getLocalDateKey();
+  const items = reflections.filter(r=>r.date===today);
+  return items.length ? items[0] : null;
+}
+function openReflectPanel(day){
+  const panel = document.getElementById(`reflect-panel-${day}`);
+  if(!panel) return;
+  panel.style.display = panel.style.display==='none' ? 'block' : 'none';
+}
+function pickReflectChip(day, group, value){
+  document.querySelectorAll(`#reflect-panel-${day} .${group}-chip`).forEach(c=>c.classList.remove('sel'));
+  const chip = document.getElementById(`reflect-${group}-${day}-${value}`);
+  if(chip) chip.classList.add('sel');
+  const panel = document.getElementById(`reflect-panel-${day}`);
+  panel.dataset[group] = String(value);
+}
+function saveReflection(day){
+  const panel = document.getElementById(`reflect-panel-${day}`);
+  if(!panel) return;
+  const rating = panel.dataset.rating || '';
+  const confidence = Number(panel.dataset.confidence || 0);
+  const went_well = document.getElementById(`reflect-well-${day}`).value.trim();
+  const improve = document.getElementById(`reflect-improve-${day}`).value.trim();
+  const action_point = document.getElementById(`reflect-action-${day}`).value.trim();
+  if(!rating || !went_well || !improve || !action_point){
+    alert('Please complete rating, what went well, improve, and action point.');
+    return;
+  }
+  const entry = {
+    date:getLocalDateKey(),
+    day_name:day,
+    rating,
+    went_well,
+    improve,
+    action_point,
+    confidence: confidence || undefined
+  };
+  const idx = reflections.findIndex(r=>r.date===entry.date && r.day_name===entry.day_name);
+  if(idx>-1) reflections[idx] = entry;
+  else reflections.push(entry);
+  safeWrite(STORAGE_KEYS.reflections, reflections);
+  generateWeek();
+}
+// REFLECTION END
+
+// HABITS START
+function habitsTemplate(date){
+  return {date,ball_mastery:false,skill_learning:false,rehab:false,mobility:false,mental_work:false};
+}
+function getHabitsEntry(date){
+  return habits.find(h=>h.date===date) || habitsTemplate(date);
+}
+function upsertHabits(entry){
+  const idx = habits.findIndex(h=>h.date===entry.date);
+  if(idx>-1) habits[idx] = entry;
+  else habits.push(entry);
+  safeWrite(STORAGE_KEYS.habits, habits);
+}
+function toggleHabit(key){
+  const date = getLocalDateKey();
+  const entry = getHabitsEntry(date);
+  entry[key] = !entry[key];
+  upsertHabits(entry);
+  renderToday();
+}
+function habitCount(entry){
+  return ['ball_mastery','skill_learning','rehab','mobility','mental_work'].filter(k=>entry[k]).length;
+}
+function habitStreak(key){
+  let streak = 0;
+  let d = parseLocalDate(getLocalDateKey());
+  while(true){
+    const date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const entry = habits.find(h=>h.date===date);
+    if(!entry || !entry[key]) break;
+    streak += 1;
+    d.setDate(d.getDate()-1);
+  }
+  return streak;
+}
+function sessionStateForDate(date){
+  const logs = sessionLogs.filter(l=>l.date===date);
+  if(logs.some(l=>l.completed_status==='completed')) return 'completed';
+  if(logs.some(l=>l.completed_status==='shortened')) return 'shortened';
+  return 'skipped';
+}
+function lastNDates(n){
+  const out = [];
+  const d = parseLocalDate(getLocalDateKey());
+  for(let i=0;i<n;i++){
+    const x = new Date(d);
+    x.setDate(d.getDate()-i);
+    out.push(`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`);
+  }
+  return out.reverse();
+}
+function cellColor(state){
+  if(state==='shortened') return 'var(--color-text-warning)';
+  if(state===true || state==='completed') return 'var(--color-text-success)';
+  return 'transparent';
+}
+// HABITS END
+
+// RECOVERY START
+function saveRecovery(){
+  safeWrite(STORAGE_KEYS.injuryProfiles, injuryProfiles);
+  safeWrite(STORAGE_KEYS.recoveryCaps, recoveryCaps);
+}
+function updateProfile(area, field, value){
+  injuryProfiles[area][field] = value;
+  if(field==='active' && !value){
+    injuryProfiles[area].severity = 0;
+    injuryProfiles[area].stage = 0;
+  }
+  saveRecovery();
+  renderRecoveryTracker();
+}
+function setProfileNumber(area, field, value){
+  injuryProfiles[area][field] = Number(value);
+  if(field==='severity' && Number(value)===0){
+    injuryProfiles[area].active = false;
+    injuryProfiles[area].stage = 0;
+  } else if(field==='severity' && Number(value)>0){
+    injuryProfiles[area].active = true;
+  }
+  saveRecovery();
+  renderRecoveryTracker();
+}
+function toggleCapability(area, cap){
+  recoveryCaps[area][cap] = !recoveryCaps[area][cap];
+  saveRecovery();
+  renderRecoveryTracker();
+}
+function daysSince(dateStr){
+  const d = parseLocalDate(dateStr);
+  if(!d) return null;
+  const today = parseLocalDate(getLocalDateKey());
+  const ms = today - d;
+  return ms>=0 ? Math.floor(ms/86400000)+1 : null;
+}
+function limitingRecovery(){
+  const active = RECOVERY_AREAS
+    .map(a=>({key:a.key,label:a.label,p:injuryProfiles[a.key],c:recoveryCaps[a.key]}))
+    .filter(x=>x.p.active && x.p.stage>0);
+  if(!active.length) return null;
+  active.sort((a,b)=>a.p.stage-b.p.stage || b.p.severity-a.p.severity);
+  return active[0];
+}
+function recoveryMainLimiter(rec){
+  if(!rec) return '';
+  if(!rec.c.cut) return 'no cutting yet';
+  if(!rec.c.strike_ball) return 'no striking yet';
+  if(!rec.c.jog) return 'no jogging yet';
+  if(!rec.c.single_leg_load) return 'single-leg loading not ready';
+  return '';
+}
+function applyRecoveryRules(sessions, edText, day){
+  if(day && day!==getTodayDayName()) return {sessions, statusText:'Recovery status: None', limiter:'', adjustments:[]};
+  const rec = limitingRecovery();
+  if(!rec) return {sessions, statusText:'Recovery status: None', limiter:'', adjustments:[]};
+  const stage = Number(rec.p.stage||0);
+  const dayCount = daysSince(rec.p.start_date);
+  let out = sessions.map(s=>({time:s.time,label:s.label,items:[...s.items]}));
+  const adjustments = [];
+  function replaceByKeywords(words, replacement){
+    let changed = false;
+    out = out.map(s=>{
+      const kept = s.items.filter(item=>!words.some(w=>item.toLowerCase().includes(w)));
+      if(kept.length !== s.items.length){
+        changed = true;
+        return {...s,items:[...kept,replacement]};
+      }
+      return s;
+    });
+    if(changed) adjustments.push(replacement);
+  }
+
+  if(stage===1){
+    out = [{time:'Today',label:'Rehab only',items:['Pain-management day: rehab and gentle mobility only.',edText]}];
+    adjustments.push('Stage 1: full session replaced with rehab-only work.');
+  } else if(stage===2){
+    out = out.filter(s=>!s.label.includes('Pitch'));
+    out.push({time:'Recovery',label:'Controlled strength + rehab',items:['Controlled strength only (pain-free range)','Rehab sequence: Copenhagens, hip flexion, isometrics']});
+    adjustments.push('Stage 2: pitch removed; controlled strength + rehab added.');
+  } else if(stage===3){
+    replaceByKeywords(['sprint','max sprint','conditioning','1v1','agility','cut'],'Recovery substitute: linear tempo runs + technique touches at controlled intensity.');
+  } else if(stage===4){
+    replaceByKeywords(['max sprint'],'Recovery substitute: controlled change-of-direction footwork (submax).');
+  }
+  if(!rec.c.jog) replaceByKeywords(['run','running','sprint','conditioning','jog'],'Capability substitute: bike/erg intervals or brisk walk volume (no jogging).');
+  if(!rec.c.cut) replaceByKeywords(['1v1','direction','agility','cut'],'Capability substitute: straight-line technical carrying and first-touch work.');
+  if(!rec.c.strike_ball) replaceByKeywords(['shoot','shot','cross','finish','volleys'],'Capability substitute: passing patterns and receiving drills (no striking).');
+  if(!rec.c.single_leg_load) replaceByKeywords(['single leg','split squat','lunge'],'Capability substitute: bilateral strength + isometric holds only.');
+
+  const statusText = `${rec.label} · Day ${dayCount||'?'} · Stage ${stage}`;
+  return {sessions:out,statusText,limiter:recoveryMainLimiter(rec),adjustments};
+}
+function renderRecoveryTracker(){
+  const el = document.getElementById('recovery-tracker');
+  if(!el) return;
+  el.innerHTML = RECOVERY_AREAS.map(a=>{
+    const p = injuryProfiles[a.key] || {active:false,start_date:null,severity:0,stage:0};
+    const c = recoveryCaps[a.key] || defaultRecoveryCaps()[a.key];
+    const activeInfo = p.active ? ` · Day ${daysSince(p.start_date)||'?'} · Stage ${p.stage||0}` : '';
+    return `<div class="injury-row" style="display:block">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <span class="inj-name"><strong>${a.label}</strong>${activeInfo}</span>
+        <button class="save-btn" onclick="updateProfile('${a.key}','active',${!p.active})">${p.active?'Active':'Inactive'}</button>
+      </div>
+      ${p.active ? `
+      <div style="margin-top:8px">
+        <input type="date" value="${p.start_date||''}" onchange="updateProfile('${a.key}','start_date',this.value)" style="font-size:12px;padding:6px 8px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);font-family:var(--font-sans)">
+        <div class="chip-row" style="margin-top:6px">${[0,1,2,3].map(v=>`<div class="chip ${p.severity===v?'sel':''}" onclick="setProfileNumber('${a.key}','severity',${v})">Severity ${v}</div>`).join('')}</div>
+        <div class="chip-row" style="margin-top:6px">${[1,2,3,4,5].map(v=>`<div class="chip ${p.stage===v?'sel':''}" onclick="setProfileNumber('${a.key}','stage',${v})">Stage ${v}</div>`).join('')}</div>
+        <div class="chip-row" style="margin-top:6px">${['walking','squeeze','bodyweight_squat','single_leg_load','jog','sprint','cut','strike_ball'].map(cap=>`<div class="chip ${c[cap]?'sel':''}" onclick="toggleCapability('${a.key}','${cap}')">${cap.replace('_',' ')}</div>`).join('')}</div>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+// RECOVERY END
+
+// DASHBOARD START
+function parseLocalDate(dateStr){
+  if(!dateStr) return null;
+  const parts = dateStr.split('-').map(Number);
+  if(parts.length!==3 || parts.some(Number.isNaN)) return null;
+  const d = new Date(parts[0], parts[1]-1, parts[2]);
+  if(Number.isNaN(d.getTime())) return null;
+  return d;
+}
+function currentWeekRange(){
+  const today = parseLocalDate(getLocalDateKey());
+  const offset = (today.getDay()+6)%7; // monday = 0
+  const start = new Date(today);
+  start.setDate(today.getDate()-offset);
+  start.setHours(0,0,0,0);
+  const end = new Date(start);
+  end.setDate(start.getDate()+6);
+  end.setHours(23,59,59,999);
+  return {start,end};
+}
+function inCurrentWeek(dateStr){
+  const d = parseLocalDate(dateStr);
+  if(!d) return false;
+  d.setHours(12,0,0,0);
+  const {start,end} = currentWeekRange();
+  return d>=start && d<=end;
+}
+function currentStreakDays(){
+  const activeDates = new Set([
+    ...sessionLogs.map(l=>l.date),
+    ...reflections.map(r=>r.date)
+  ]);
+  let streak = 0;
+  let d = parseLocalDate(getLocalDateKey());
+  while(true){
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if(!activeDates.has(key)) break;
+    streak += 1;
+    d.setDate(d.getDate()-1);
+  }
+  return streak;
+}
+function dashboardInsight(stats){
+  if(stats.skipped >= 2) return 'You’ve skipped multiple sessions. Reset tomorrow.';
+  if(stats.logs >= 4 && stats.reflections < Math.ceil(stats.logs/2)) return 'Logging is good, but reflections are lagging.';
+  if(stats.avgRpeNum !== null && stats.avgRpeNum >= 8) return 'Effort is high — watch recovery.';
+  if(stats.logs >= 3) return 'You’re consistent this week.';
+  return 'Small wins count — log today.';
+}
+function renderDashboard(){
+  const weekLogs = sessionLogs.filter(l=>inCurrentWeek(l.date));
+  const weekRefs = reflections.filter(r=>inCurrentWeek(r.date));
+  const completed = weekLogs.filter(l=>l.completed_status==='completed').length;
+  const shortened = weekLogs.filter(l=>l.completed_status==='shortened').length;
+  const skipped = weekLogs.filter(l=>l.completed_status==='skipped').length;
+  const rpes = weekLogs.map(l=>Number(l.rpe)).filter(n=>!Number.isNaN(n) && n>0);
+  const avgRpeNum = rpes.length ? rpes.reduce((a,b)=>a+b,0)/rpes.length : null;
+  const confs = weekRefs.map(r=>Number(r.confidence)).filter(n=>!Number.isNaN(n) && n>0);
+  const avgConfNum = confs.length ? confs.reduce((a,b)=>a+b,0)/confs.length : null;
+  const streak = currentStreakDays();
+  const todayHabits = getHabitsEntry(getLocalDateKey());
+  const standardsDone = habitCount(todayHabits);
+  const ballStreak = habitStreak('ball_mastery');
+  const rec = limitingRecovery();
+  const recLine = rec ? `${rec.label} stage ${rec.p.stage}` : 'None';
+  const stats = {logs:weekLogs.length,reflections:weekRefs.length,skipped,avgRpeNum};
+  const insight = dashboardInsight(stats);
+
+  const activities = [];
+  const latestDaily = safeRead(STORAGE_KEYS.daily, null);
+  if(latestDaily && latestDaily.date){
+    activities.push({date:latestDaily.date,type:'Daily check-in',summary:`Energy ${latestDaily.energy}, Pain ${latestDaily.pain}`});
+  }
+  sessionLogs.forEach(l=>activities.push({date:l.date,type:'Session log',summary:`${logStatusText(l.completed_status)}, ${l.duration_minutes} min, RPE ${l.rpe}`}));
+  reflections.forEach(r=>{
+    const conf = r.confidence ? `, Confidence ${r.confidence}` : '';
+    activities.push({date:r.date,type:'Reflection',summary:`${reflectionText(r.rating)}${conf}`});
+  });
+  activities.sort((a,b)=>a.date<b.date?1:-1);
+  const recent = activities.slice(0,5);
+
+  const el = document.getElementById('dashboard-card');
+  if(!el) return;
+  el.innerHTML = `
+    <div style="font-size:13px;color:var(--color-text-primary);line-height:1.7">
+      <div><strong>Sessions logged:</strong> ${weekLogs.length}</div>
+      <div><strong>Completed:</strong> ${completed} · <strong>Shortened:</strong> ${shortened} · <strong>Skipped:</strong> ${skipped}</div>
+      <div><strong>Avg RPE:</strong> ${avgRpeNum===null?'—':avgRpeNum.toFixed(1)}</div>
+      <div><strong>Reflections:</strong> ${weekRefs.length}</div>
+      <div><strong>Avg confidence:</strong> ${avgConfNum===null?'—':avgConfNum.toFixed(1)}</div>
+      <div><strong>Current streak:</strong> ${streak} days</div>
+      <div><strong>Daily standards:</strong> ${standardsDone}/5 today</div>
+      <div><strong>Ball mastery streak:</strong> ${ballStreak} days</div>
+      <div><strong>Active recovery:</strong> ${recLine}</div>
+    </div>
+    <div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:var(--color-background-secondary);font-size:12px;color:var(--color-text-secondary)">
+      ${insight}
+    </div>
+    <div class="q-label" style="margin:10px 0 6px">Recent activity</div>
+    ${recent.length ? recent.map(a=>`<div class="injury-row"><span class="inj-name">${a.date} · ${a.type} · ${a.summary}</span></div>`).join('') : `<div class="injury-row"><span class="inj-name">No recent activity yet.</span></div>`}
+  `;
+}
+// DASHBOARD END
+
+// TODAY VIEW START
+function getEntryForDateDay(list, date, day){
+  return list.find(x=>x.date===date && x.day_name===day) || null;
+}
+function applyDailyAdjustmentsForDay(sessions, edText, day){
+  if(!todayDaily || day!==getTodayDayName()) return sessions;
+  let adjusted = sessions.map(s=>({time:s.time,label:s.label,items:[...s.items]}));
+  if(todayDaily.pain >= 6){
+    adjusted = adjusted.map(s => s.label.includes('Pitch')
+      ? {time:s.time,label:'Rehab block',items:[
+          'Pain is elevated today — no pitch exposure.',
+          'Copenhagens 6 each side · Hip flexion KB 8 each side · Isometric split squat hold 3×30s',
+          'Light mobility only: hip 90/90 and hamstring flossing'
+        ]}
+      : s
+    );
+  }
+  if(todayDaily.soreness >= 4){
+    adjusted = adjusted.map(s => ({
+      ...s,
+      items:s.items.filter(item => {
+        const txt = item.toLowerCase();
+        return !(txt.includes('sprint') || txt.includes('conditioning'));
+      })
+    }));
+  }
+  if(todayDaily.sleep < 5 && adjusted.length) adjusted = adjusted.slice(0,-1);
+  if(todayDaily.energy <= 2) adjusted = [{time:'Today',label:'Minimum version',items:[edText]}];
+  return adjusted;
+}
+function renderToday(){
+  const today = getLocalDateKey();
+  const day = getTodayDayName();
+  const plan = getDayPlan(day, state.body, state.inj, state.focus, state.week, state.sleep, state.pl);
+  const injured = state.body === 'injured';
+  const baseSessions = injured ? (plan?.injured || plan?.normal || []) : (plan?.normal || []);
+  const edText = injured ? ((plan?.edInjured)||plan?.ed||'') : (plan?.ed||'');
+  const dailyAdjusted = applyDailyAdjustmentsForDay(baseSessions, edText, day);
+  const recoveryAdjusted = applyRecoveryRules(dailyAdjusted, edText, day);
+  const sessions = recoveryAdjusted.sessions;
+  const dayLog = getEntryForDateDay(sessionLogs, today, day);
+  const dayReflection = getEntryForDateDay(reflections, today, day);
+  const todayHabits = getHabitsEntry(today);
+  const habitsDone = habitCount(todayHabits);
+  const habitsMsg = habitsDone===5 ? 'Daily standard hit.' : (habitsDone===0 ? 'Start with one.' : '');
+  const dates14 = lastNDates(14);
+  function rowCells(type){
+    return dates14.map(date=>{
+      const h = getHabitsEntry(date);
+      const state = type==='session'
+        ? sessionStateForDate(date)
+        : (type==='ball_mastery' ? h.ball_mastery : type==='skill_learning' ? h.skill_learning : h.rehab);
+      return `<span title="${date}" style="width:9px;height:9px;border-radius:2px;border:0.5px solid var(--color-border-secondary);display:inline-block;background:${cellColor(state)}"></span>`;
+    }).join('');
+  }
+  const statsLine = todayDaily
+    ? `Sleep ${todayDaily.sleep}h · Energy ${todayDaily.energy} · Soreness ${todayDaily.soreness} · Pain ${todayDaily.pain}`
+    : 'No daily check-in for today yet.';
+  const logLine = dayLog ? `${logStatusText(dayLog.completed_status)} · ${dayLog.duration_minutes} min · RPE ${dayLog.rpe}` : 'Not logged yet.';
+  const refLine = dayReflection
+    ? `${reflectionText(dayReflection.rating)}${dayReflection.confidence?` · Confidence ${dayReflection.confidence}`:''}`
+    : 'No reflection yet.';
+
+  const el = document.getElementById('today-main');
+  if(!el) return;
+  el.innerHTML = `
+    <div class="daily-bar"><strong>Today:</strong> ${day} · ${statsLine}</div>
+    <div class="daily-bar"><strong>Recovery status:</strong> ${recoveryAdjusted.statusText}${recoveryAdjusted.limiter?` · Main limiter: ${recoveryAdjusted.limiter}`:''}</div>
+    ${recoveryAdjusted.adjustments && recoveryAdjusted.adjustments.length ? `<div class="daily-bar"><strong>Recovery adjustments:</strong> ${[...new Set(recoveryAdjusted.adjustments)].join(' · ')}</div>` : ''}
+    <div class="day-card">
+      <div class="day-head">
+        <div class="day-left">
+          <span class="day-name">${day} session</span>
+          <span class="day-pill ${plan?plan.pill:'pill-rest'}">${plan?plan.pillText:'Plan unavailable'}</span>
+        </div>
+      </div>
+      <div class="day-body open" style="display:block">
+        <div class="time-block">
+          ${sessions.map(s=>`<div class="time-row"><div class="time-stamp">${s.time}</div><div class="time-content"><div class="time-label">${s.label}</div>${s.items.map(i=>`<div class="time-item">${i}</div>`).join('')}</div></div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="section-title" style="margin-top:12px">Daily non-negotiables</div>
+    <div class="juggle-card">
+      <div class="chip-row">
+        <div class="chip ${todayHabits.ball_mastery?'sel':''}" onclick="toggleHabit('ball_mastery')">Ball mastery</div>
+        <div class="chip ${todayHabits.skill_learning?'sel':''}" onclick="toggleHabit('skill_learning')">Skill learning</div>
+        <div class="chip ${todayHabits.rehab?'sel':''}" onclick="toggleHabit('rehab')">Rehab</div>
+        <div class="chip ${todayHabits.mobility?'sel':''}" onclick="toggleHabit('mobility')">Mobility</div>
+        <div class="chip ${todayHabits.mental_work?'sel':''}" onclick="toggleHabit('mental_work')">Mental work</div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--color-text-secondary)"><strong>${habitsDone}/5 done today</strong>${habitsMsg?` · ${habitsMsg}`:''}</div>
+    </div>
+    <div class="section-title">Consistency</div>
+    <div class="juggle-card">
+      <div class="injury-row"><span class="inj-name">Ball mastery</span><span style="display:flex;gap:3px">${rowCells('ball_mastery')}</span></div>
+      <div class="injury-row"><span class="inj-name">Skill learning</span><span style="display:flex;gap:3px">${rowCells('skill_learning')}</span></div>
+      <div class="injury-row"><span class="inj-name">Rehab</span><span style="display:flex;gap:3px">${rowCells('rehab')}</span></div>
+      <div class="injury-row"><span class="inj-name">Session completed</span><span style="display:flex;gap:3px">${rowCells('session')}</span></div>
+      <div style="margin-top:8px;font-size:12px;color:var(--color-text-secondary)">
+        Ball mastery: ${habitStreak('ball_mastery')} days · Skill learning: ${habitStreak('skill_learning')} days · Rehab: ${habitStreak('rehab')} days
+      </div>
+    </div>
+    <div class="daily-bar"><strong>Today log:</strong> ${logLine}</div>
+    <div class="daily-bar"><strong>Today reflection:</strong> ${refLine}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="save-btn" onclick="openWeekView()">View week</button>
+      <button class="save-btn" onclick="openWeekAndExpand('${day}')">${dayLog?'Edit log':'Log session'}</button>
+      <button class="save-btn" onclick="openWeekAndReflect('${day}')">${dayReflection?'Edit reflection':'Reflect'}</button>
+      <button class="save-btn" onclick="startRebuildWeek()">Rebuild week</button>
+    </div>
+  `;
+}
+function openTodayView(){
+  renderToday();
+  showScreen('screen-today');
+}
+function openWeekView(){
+  generateWeek();
+}
+function buildWeekPlan(){
+  saved.weekState = {week_start:getWeekStartKey(),body:state.body,inj:[...state.inj],focus:[...state.focus],week:state.week,sleep:state.sleep,pl:state.pl};
+  saveLocal();
+  if(todayDaily) openTodayView();
+  else showScreen('screen-daily');
+}
+function openWeekAndExpand(day){
+  generateWeek();
+  setTimeout(()=>{ const btn = document.querySelector(`button[onclick="openLogPanel('${day}')"]`); if(btn) btn.click(); }, 0);
+}
+function openWeekAndReflect(day){
+  generateWeek();
+  setTimeout(()=>{ const btn = document.querySelector(`button[onclick="openReflectPanel('${day}')"]`); if(btn) btn.click(); }, 0);
+}
+function startRebuildWeek(){
+  showScreen('screen-checkin');
+}
+function openHistoryView(){
+  renderHistory();
+  showScreen('screen-history');
+}
+function renderHistory(){
+  const sortDesc = (arr)=>[...arr].sort((a,b)=>{
+    const ad = parseLocalDate(a.date); const bd = parseLocalDate(b.date);
+    if(!ad && !bd) return 0;
+    if(!ad) return 1;
+    if(!bd) return -1;
+    return bd - ad;
+  });
+  const daily7 = sortDesc(dailyHistory).slice(0,7);
+  const logs7 = sortDesc(sessionLogs).slice(0,7);
+  const refs7 = sortDesc(reflections).slice(0,7);
+  const dates14 = lastNDates(14);
+  const avgSleep = daily7.length ? (daily7.reduce((n,d)=>n+Number(d.sleep||0),0)/daily7.length).toFixed(1) : '—';
+  const avgPain = daily7.length ? (daily7.reduce((n,d)=>n+Number(d.pain||0),0)/daily7.length).toFixed(1) : '—';
+  const completed7 = logs7.filter(l=>l.completed_status==='completed').length;
+  const ballHits = lastNDates(7).filter(date=>getHabitsEntry(date).ball_mastery).length;
+  const activeRec = RECOVERY_AREAS
+    .map(a=>({label:a.label,p:injuryProfiles[a.key],c:recoveryCaps[a.key]}))
+    .filter(x=>x.p && x.p.active);
+
+  function habitRow(key){
+    return dates14.map(date=>`<span style="width:9px;height:9px;border-radius:2px;border:0.5px solid var(--color-border-secondary);display:inline-block;background:${cellColor(getHabitsEntry(date)[key])}" title="${date}"></span>`).join('');
+  }
+  function limiterText(c){
+    const blockers = [];
+    if(!c.cut) blockers.push('no cut');
+    if(!c.strike_ball) blockers.push('no strike');
+    if(!c.jog) blockers.push('no jog');
+    return blockers.length ? blockers.join(', ') : 'none';
+  }
+  const el = document.getElementById('history-main');
+  if(!el) return;
+  el.innerHTML = `
+    <div class="juggle-card">
+      <div style="font-size:13px;line-height:1.7">
+        <div><strong>Avg sleep (7):</strong> ${avgSleep}</div>
+        <div><strong>Avg pain (7):</strong> ${avgPain}</div>
+        <div><strong>Sessions completed (7 logs):</strong> ${completed7}</div>
+        <div><strong>Ball mastery hits (7 days):</strong> ${ballHits}</div>
+      </div>
+    </div>
+    <div class="section-title">Recent daily check-ins</div>
+    <div class="injury-card">${daily7.length?daily7.map(d=>`<div class="injury-row"><span class="inj-name">${d.date} · Sleep ${d.sleep}h · E${d.energy} · S${d.soreness} · P${d.pain}</span></div>`).join(''):'<div class="injury-row"><span class="inj-name">No daily check-ins yet.</span></div>'}</div>
+    <div class="section-title">Recent session logs</div>
+    <div class="injury-card">${logs7.length?logs7.map(l=>`<div class="injury-row"><span class="inj-name">${l.date} · ${l.day_name} · ${logStatusText(l.completed_status)} · ${l.duration_minutes} min · RPE ${l.rpe}</span></div>`).join(''):'<div class="injury-row"><span class="inj-name">No session logs yet.</span></div>'}</div>
+    <div class="section-title">Recent reflections</div>
+    <div class="injury-card">${refs7.length?refs7.map(r=>`<div class="injury-row"><span class="inj-name">${r.date} · ${r.day_name} · ${reflectionText(r.rating)}${r.confidence?` · C${r.confidence}`:''} · ${r.action_point||'—'}</span></div>`).join(''):'<div class="injury-row"><span class="inj-name">No reflections yet.</span></div>'}</div>
+    <div class="section-title">Habit consistency snapshot</div>
+    <div class="juggle-card">
+      <div class="injury-row"><span class="inj-name">Ball mastery</span><span style="display:flex;gap:3px">${habitRow('ball_mastery')}</span></div>
+      <div class="injury-row"><span class="inj-name">Skill learning</span><span style="display:flex;gap:3px">${habitRow('skill_learning')}</span></div>
+      <div class="injury-row"><span class="inj-name">Rehab</span><span style="display:flex;gap:3px">${habitRow('rehab')}</span></div>
+      <div class="injury-row"><span class="inj-name">Mobility</span><span style="display:flex;gap:3px">${habitRow('mobility')}</span></div>
+      <div class="injury-row"><span class="inj-name">Mental work</span><span style="display:flex;gap:3px">${habitRow('mental_work')}</span></div>
+    </div>
+    <div class="section-title">Recovery snapshot</div>
+    <div class="injury-card">${activeRec.length?activeRec.map(r=>`<div class="injury-row"><span class="inj-name">${r.label} · Day ${daysSince(r.p.start_date)||'?'} · Stage ${r.p.stage} · Limits: ${limiterText(r.c)}</span></div>`).join(''):'<div class="injury-row"><span class="inj-name">No active recovery profile.</span></div>'}</div>
+  `;
+}
+// TODAY VIEW END
 
 // ─── PROGRAMME DATA ───────────────────────────────────────────────────────────
 // Each day: normal + injured variants
@@ -540,8 +1379,34 @@ const STUDY_PLAYERS = [
 // ─── RENDER ──────────────────────────────────────────────────────────────────
 function generateWeek(){
   const {body,inj,focus,week:wk,sleep:sl,pl} = state;
-  document.getElementById('screen-checkin').classList.remove('active');
-  document.getElementById('screen-week').classList.add('active');
+  showScreen('screen-week');
+  if(body || inj.length || focus.length || wk || sl || pl){
+    saved.weekState = {week_start:getWeekStartKey(),body,inj:[...inj],focus:[...focus],week:wk,sleep:sl,pl};
+  }
+  saveLocal();
+
+  const dailyBar = document.getElementById('today-bar');
+  if(todayDaily){
+    dailyBar.textContent = `Today: Sleep ${todayDaily.sleep}h · Energy ${todayDaily.energy} · Soreness ${todayDaily.soreness} · Pain ${todayDaily.pain}`;
+  } else {
+    dailyBar.textContent = 'Today: No daily check-in yet.';
+  }
+  const todayLog = todayLogEntry();
+  const todayLogWrap = document.getElementById('today-log-wrap');
+  if(todayLog){
+    todayLogWrap.innerHTML = `<div class="daily-bar"><strong>Today logged:</strong> ${logStatusText(todayLog.completed_status)} · ${todayLog.duration_minutes} min · RPE ${todayLog.rpe}</div>`;
+  } else {
+    todayLogWrap.innerHTML = '';
+  }
+  const todayReflection = todayReflectionEntry();
+  const todayReflectionWrap = document.getElementById('today-reflection-wrap');
+  if(todayReflection){
+    const confText = todayReflection.confidence ? ` · Confidence ${todayReflection.confidence}` : '';
+    todayReflectionWrap.innerHTML = `<div class="daily-bar"><strong>Today reflection:</strong> ${reflectionText(todayReflection.rating)}${confText}</div>`;
+  } else {
+    todayReflectionWrap.innerHTML = '';
+  }
+  renderDashboard();
 
   const injured = body === 'injured';
 
@@ -581,8 +1446,15 @@ function generateWeek(){
       ? (plan.edInjured || plan.ed)
       : plan.ed;
 
+    sessions = applyDailyAdjustmentsForDay(sessions, edText, day);
+    sessions = applyRecoveryRules(sessions, edText, day).sessions;
+
     const plNote = pl==='yes' && (day==='Wednesday'||day==='Friday') ? ' + Powerleague' : '';
     const pillText = plan.pillText + plNote;
+    const latestLog = latestLogForDay(day);
+    const logBadge = latestLog ? `<span class="day-pill ${logStatusClass(latestLog.completed_status)}">${logStatusText(latestLog.completed_status)}</span>` : '';
+    const latestReflection = latestReflectionForDay(day);
+    const reflectionBadge = latestReflection ? `<span class="day-pill ${reflectionClass(latestReflection.rating)}">${reflectionText(latestReflection.rating)}</span>` : '';
 
     // show player study on Saturday
     const playerStudyHTML = day==='Saturday' ? `<div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:var(--color-background-info);font-size:12px;color:var(--color-text-info);line-height:1.5"><strong>Player to study this week:</strong> ${player.name} — ${player.why}</div>` : '';
@@ -607,6 +1479,8 @@ function generateWeek(){
         <div class="day-left">
           <span class="day-name">${day}</span>
           <span class="day-pill ${plan.pill}">${pillText}</span>
+          ${logBadge}
+          ${reflectionBadge}
         </div>
         <span class="day-chevron">&#9660;</span>
       </div>
@@ -619,6 +1493,42 @@ function generateWeek(){
           <div class="ed-label">Low energy / executive dysfunction fallback</div>
           <div class="ed-text">${edText}</div>
         </div>
+        <div style="margin-top:10px">
+          <button class="save-btn" onclick="openLogPanel('${day}')">Log session</button>
+          ${latestLog ? `<button class="save-btn" style="margin-left:6px" onclick="openReflectPanel('${day}')">Reflect</button>` : ''}
+          <div id="log-panel-${day}" data-status="${latestLog?latestLog.completed_status:''}" data-rpe="${latestLog?latestLog.rpe:''}" style="display:none;margin-top:10px;background:var(--color-background-secondary);padding:10px;border-radius:var(--border-radius-md)">
+            <div class="q-label" style="margin-bottom:6px">Completed status</div>
+            <div class="chip-row" style="margin-bottom:8px">
+              <div id="log-status-${day}-completed" class="chip status-chip ${latestLog&&latestLog.completed_status==='completed'?'sel':''}" onclick="pickLogChip('${day}','status','completed')">Completed</div>
+              <div id="log-status-${day}-shortened" class="chip status-chip ${latestLog&&latestLog.completed_status==='shortened'?'sel':''}" onclick="pickLogChip('${day}','status','shortened')">Shortened</div>
+              <div id="log-status-${day}-skipped" class="chip status-chip ${latestLog&&latestLog.completed_status==='skipped'?'sel':''}" onclick="pickLogChip('${day}','status','skipped')">Skipped</div>
+            </div>
+            <div class="q-label" style="margin-bottom:6px">Duration (minutes)</div>
+            <input id="log-duration-${day}" type="number" min="1" step="1" value="${latestLog?latestLog.duration_minutes:''}" style="width:100%;font-size:13px;padding:8px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans)">
+            <div class="q-label" style="margin:8px 0 6px">RPE (1–10)</div>
+            <div class="chip-row" style="margin-bottom:8px">
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<div id="log-rpe-${day}-${n}" class="chip rpe-chip ${latestLog&&latestLog.rpe===n?'sel':''}" onclick="pickLogChip('${day}','rpe','${n}')">${n}</div>`).join('')}
+            </div>
+            <textarea id="log-notes-${day}" class="note-input" placeholder="Quick session notes...">${latestLog&&latestLog.notes?latestLog.notes:''}</textarea>
+            <button class="save-btn" onclick="saveSessionLog('${day}')">Save log</button>
+          </div>
+          <div id="reflect-panel-${day}" data-rating="${latestReflection?latestReflection.rating:''}" data-confidence="${latestReflection&&latestReflection.confidence?latestReflection.confidence:''}" style="display:none;margin-top:10px;background:var(--color-background-secondary);padding:10px;border-radius:var(--border-radius-md)">
+            <div class="q-label" style="margin-bottom:6px">Rating</div>
+            <div class="chip-row" style="margin-bottom:8px">
+              <div id="reflect-rating-${day}-red" class="chip rating-chip ${latestReflection&&latestReflection.rating==='red'?'sel':''}" onclick="pickReflectChip('${day}','rating','red')">Red</div>
+              <div id="reflect-rating-${day}-amber" class="chip rating-chip ${latestReflection&&latestReflection.rating==='amber'?'sel':''}" onclick="pickReflectChip('${day}','rating','amber')">Amber</div>
+              <div id="reflect-rating-${day}-green" class="chip rating-chip ${latestReflection&&latestReflection.rating==='green'?'sel':''}" onclick="pickReflectChip('${day}','rating','green')">Green</div>
+            </div>
+            <div class="q-label" style="margin-bottom:6px">Confidence (optional, 1–5)</div>
+            <div class="chip-row" style="margin-bottom:8px">
+              ${[1,2,3,4,5].map(n=>`<div id="reflect-confidence-${day}-${n}" class="chip confidence-chip ${latestReflection&&latestReflection.confidence===n?'sel':''}" onclick="pickReflectChip('${day}','confidence','${n}')">${n}</div>`).join('')}
+            </div>
+            <input id="reflect-well-${day}" value="${latestReflection&&latestReflection.went_well?latestReflection.went_well:''}" placeholder="Went well..." style="width:100%;font-size:13px;padding:8px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans)">
+            <input id="reflect-improve-${day}" value="${latestReflection&&latestReflection.improve?latestReflection.improve:''}" placeholder="To improve..." style="width:100%;font-size:13px;padding:8px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans);margin-top:6px">
+            <input id="reflect-action-${day}" value="${latestReflection&&latestReflection.action_point?latestReflection.action_point:''}" placeholder="Next action point..." style="width:100%;font-size:13px;padding:8px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans);margin-top:6px">
+            <button class="save-btn" onclick="saveReflection('${day}')">Save reflection</button>
+          </div>
+        </div>
       </div>`;
 
     container.appendChild(card);
@@ -626,6 +1536,7 @@ function generateWeek(){
 
   renderJuggling();
   renderInjuries();
+  renderRecoveryTracker();
 }
 
 function toggleDay(head){
@@ -705,10 +1616,25 @@ function saveNotes(){
 function saveLocal(){
   saved.tricks = state.tricks;
   saved.injuries = state.injuries;
-  localStorage.setItem('jhnson_prog', JSON.stringify(saved));
+  safeWrite(STORAGE_KEYS.prog, saved);
 }
 
 if(saved.injNotes){ setTimeout(()=>{const el=document.getElementById('inj-notes');if(el)el.value=saved.injNotes;},100); }
+
+// // DAILY CHECK-IN START
+(function initAppFlow(){
+  if(!hasCurrentWeekPlan()){
+    showScreen('screen-checkin');
+    return;
+  }
+  Object.assign(state, saved.weekState||{});
+  if(!todayDaily){
+    showScreen('screen-daily');
+    return;
+  }
+  openTodayView();
+})();
+// // DAILY CHECK-IN END
 </script>
 </body>
 </html>
