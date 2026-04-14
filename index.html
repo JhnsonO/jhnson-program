@@ -695,31 +695,45 @@ function recoveryMainLimiter(rec){
   return '';
 }
 function applyRecoveryRules(sessions, edText, day){
-  if(day && day!==getTodayDayName()) return {sessions, statusText:'Recovery status: None', limiter:''};
+  if(day && day!==getTodayDayName()) return {sessions, statusText:'Recovery status: None', limiter:'', adjustments:[]};
   const rec = limitingRecovery();
-  if(!rec) return {sessions, statusText:'Recovery status: None', limiter:''};
+  if(!rec) return {sessions, statusText:'Recovery status: None', limiter:'', adjustments:[]};
   const stage = Number(rec.p.stage||0);
   const dayCount = daysSince(rec.p.start_date);
   let out = sessions.map(s=>({time:s.time,label:s.label,items:[...s.items]}));
-  const removeByKeywords = (arr, words) => arr.map(s=>({...s,items:s.items.filter(item=>!words.some(w=>item.toLowerCase().includes(w)))}));
+  const adjustments = [];
+  function replaceByKeywords(words, replacement){
+    let changed = false;
+    out = out.map(s=>{
+      const kept = s.items.filter(item=>!words.some(w=>item.toLowerCase().includes(w)));
+      if(kept.length !== s.items.length){
+        changed = true;
+        return {...s,items:[...kept,replacement]};
+      }
+      return s;
+    });
+    if(changed) adjustments.push(replacement);
+  }
 
   if(stage===1){
     out = [{time:'Today',label:'Rehab only',items:['Pain-management day: rehab and gentle mobility only.',edText]}];
+    adjustments.push('Stage 1: full session replaced with rehab-only work.');
   } else if(stage===2){
     out = out.filter(s=>!s.label.includes('Pitch'));
     out.push({time:'Recovery',label:'Controlled strength + rehab',items:['Controlled strength only (pain-free range)','Rehab sequence: Copenhagens, hip flexion, isometrics']});
+    adjustments.push('Stage 2: pitch removed; controlled strength + rehab added.');
   } else if(stage===3){
-    out = removeByKeywords(out,['sprint','max sprint','conditioning','1v1','agility','cut']);
+    replaceByKeywords(['sprint','max sprint','conditioning','1v1','agility','cut'],'Recovery substitute: linear tempo runs + technique touches at controlled intensity.');
   } else if(stage===4){
-    out = removeByKeywords(out,['max sprint']);
+    replaceByKeywords(['max sprint'],'Recovery substitute: controlled change-of-direction footwork (submax).');
   }
-  if(!rec.c.jog) out = removeByKeywords(out,['run','running','sprint','conditioning','jog']);
-  if(!rec.c.cut) out = removeByKeywords(out,['1v1','direction','agility','cut']);
-  if(!rec.c.strike_ball) out = removeByKeywords(out,['shoot','shot','cross','finish','volleys']);
-  if(!rec.c.single_leg_load) out = removeByKeywords(out,['single leg','split squat','lunge']);
+  if(!rec.c.jog) replaceByKeywords(['run','running','sprint','conditioning','jog'],'Capability substitute: bike/erg intervals or brisk walk volume (no jogging).');
+  if(!rec.c.cut) replaceByKeywords(['1v1','direction','agility','cut'],'Capability substitute: straight-line technical carrying and first-touch work.');
+  if(!rec.c.strike_ball) replaceByKeywords(['shoot','shot','cross','finish','volleys'],'Capability substitute: passing patterns and receiving drills (no striking).');
+  if(!rec.c.single_leg_load) replaceByKeywords(['single leg','split squat','lunge'],'Capability substitute: bilateral strength + isometric holds only.');
 
   const statusText = `${rec.label} · Day ${dayCount||'?'} · Stage ${stage}`;
-  return {sessions:out,statusText,limiter:recoveryMainLimiter(rec)};
+  return {sessions:out,statusText,limiter:recoveryMainLimiter(rec),adjustments};
 }
 function renderRecoveryTracker(){
   const el = document.getElementById('recovery-tracker');
@@ -915,6 +929,7 @@ function renderToday(){
   el.innerHTML = `
     <div class="daily-bar"><strong>Today:</strong> ${day} · ${statsLine}</div>
     <div class="daily-bar"><strong>Recovery status:</strong> ${recoveryAdjusted.statusText}${recoveryAdjusted.limiter?` · Main limiter: ${recoveryAdjusted.limiter}`:''}</div>
+    ${recoveryAdjusted.adjustments && recoveryAdjusted.adjustments.length ? `<div class="daily-bar"><strong>Recovery adjustments:</strong> ${[...new Set(recoveryAdjusted.adjustments)].join(' · ')}</div>` : ''}
     <div class="day-card">
       <div class="day-head">
         <div class="day-left">
