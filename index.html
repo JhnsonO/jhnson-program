@@ -144,8 +144,63 @@
 <body>
 <div class="app">
 
+<!-- // DAILY CHECK-IN START -->
+<div id="screen-daily" class="screen">
+  <div class="q-block">
+    <div class="q-label">Daily check-in</div>
+    <div class="q-title">How did you wake up today?</div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">Sleep (hours)</div>
+    <input id="daily-sleep" type="number" min="0" max="14" step="0.5" placeholder="e.g. 7.5" style="width:100%;font-size:14px;padding:10px 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);font-family:var(--font-sans)">
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">Energy (1–5)</div>
+    <div class="chip-row" id="daily-energy-chips">
+      <div class="chip" data-val="1" onclick="pickDaily(this,'energy')">1</div>
+      <div class="chip" data-val="2" onclick="pickDaily(this,'energy')">2</div>
+      <div class="chip" data-val="3" onclick="pickDaily(this,'energy')">3</div>
+      <div class="chip" data-val="4" onclick="pickDaily(this,'energy')">4</div>
+      <div class="chip" data-val="5" onclick="pickDaily(this,'energy')">5</div>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">Soreness (1–5)</div>
+    <div class="chip-row" id="daily-soreness-chips">
+      <div class="chip" data-val="1" onclick="pickDaily(this,'soreness')">1</div>
+      <div class="chip" data-val="2" onclick="pickDaily(this,'soreness')">2</div>
+      <div class="chip" data-val="3" onclick="pickDaily(this,'soreness')">3</div>
+      <div class="chip" data-val="4" onclick="pickDaily(this,'soreness')">4</div>
+      <div class="chip" data-val="5" onclick="pickDaily(this,'soreness')">5</div>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">Pain (0–10)</div>
+    <div class="chip-row" id="daily-pain-chips">
+      <div class="chip" data-val="0" onclick="pickDaily(this,'pain')">0</div>
+      <div class="chip" data-val="1" onclick="pickDaily(this,'pain')">1</div>
+      <div class="chip" data-val="2" onclick="pickDaily(this,'pain')">2</div>
+      <div class="chip" data-val="3" onclick="pickDaily(this,'pain')">3</div>
+      <div class="chip" data-val="4" onclick="pickDaily(this,'pain')">4</div>
+      <div class="chip" data-val="5" onclick="pickDaily(this,'pain')">5</div>
+      <div class="chip" data-val="6" onclick="pickDaily(this,'pain')">6</div>
+      <div class="chip" data-val="7" onclick="pickDaily(this,'pain')">7</div>
+      <div class="chip" data-val="8" onclick="pickDaily(this,'pain')">8</div>
+      <div class="chip" data-val="9" onclick="pickDaily(this,'pain')">9</div>
+      <div class="chip" data-val="10" onclick="pickDaily(this,'pain')">10</div>
+    </div>
+  </div>
+
+  <button class="gen-btn" onclick="saveDailyCheckin()">Continue →</button>
+</div>
+<!-- // DAILY CHECK-IN END -->
+
 <!-- CHECK-IN SCREEN -->
-<div id="screen-checkin" class="screen active">
+<div id="screen-checkin" class="screen">
 
   <div class="q-block">
     <div class="q-label">Step 1 of 4</div>
@@ -225,6 +280,15 @@
   <div id="injury-banner-wrap"></div>
 
   <div class="daily-bar">
+    <strong id="today-bar">Today:</strong>
+  </div>
+  <div id="today-log-wrap"></div>
+  <div id="today-reflection-wrap"></div>
+
+  <div class="section-title">Dashboard</div>
+  <div class="juggle-card" id="dashboard-card"></div>
+
+  <div class="daily-bar">
     <strong>Every day without exception:</strong> Ball mastery at home before leaving (10 min) · Rehab (Copenhagens + hip flexion + iso hold) · Mental (rotate: visualisation / match study / breathing, 5 min)
   </div>
 
@@ -253,13 +317,43 @@
 
 </div>
 <script>
+const STORAGE_KEYS = {prog:'jhnson_prog',daily:'jhnson_daily',logs:'jhnson_session_logs',reflections:'jhnson_reflections'};
 const state = {body:'',inj:[],focus:[],week:'',sleep:'',pl:''};
 let saved = {};
-try{ saved = JSON.parse(localStorage.getItem('jhnson_prog')||'{}'); }catch(e){}
+let todayDaily = null;
+
+function safeRead(key, fallback){
+  try{
+    const raw = localStorage.getItem(key);
+    if(!raw) return fallback;
+    return JSON.parse(raw);
+  }catch(e){
+    return fallback;
+  }
+}
+function safeWrite(key, value){
+  try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){}
+}
+function getLocalDateKey(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+saved = safeRead(STORAGE_KEYS.prog, {});
 if(saved.tricks) state.tricks = saved.tricks;
 if(saved.injuries) state.injuries = saved.injuries;
+if(saved.weekState) Object.assign(state, saved.weekState);
 if(!state.tricks) state.tricks = [];
 if(!state.injuries) state.injuries = {};
+const daily = safeRead(STORAGE_KEYS.daily, null);
+if(daily && daily.date===getLocalDateKey()) todayDaily = daily;
+let sessionLogs = safeRead(STORAGE_KEYS.logs, []);
+if(!Array.isArray(sessionLogs)) sessionLogs = [];
+let reflections = safeRead(STORAGE_KEYS.reflections, []);
+if(!Array.isArray(reflections)) reflections = [];
 
 function pick(el,group,cls){
   document.querySelectorAll('#'+group+'-chips .chip').forEach(c=>{c.className='chip';});
@@ -274,6 +368,260 @@ function pickMulti(el,group){
   if(i>-1){arr.splice(i,1);el.className='chip';}
   else{arr.push(v);el.classList.add('chip','sel-blue');}
 }
+
+// // DAILY CHECK-IN START
+const dailyState = {energy:null,soreness:null,pain:null};
+function pickDaily(el,group){
+  document.querySelectorAll('#daily-'+group+'-chips .chip').forEach(c=>{c.className='chip';});
+  el.classList.add('chip','sel');
+  dailyState[group] = Number(el.dataset.val);
+}
+
+function saveDailyCheckin(){
+  const sleep = Number(document.getElementById('daily-sleep').value);
+  if(!sleep || dailyState.energy===null || dailyState.soreness===null || dailyState.pain===null){
+    alert('Please complete all daily check-in fields.');
+    return;
+  }
+  const entry = {
+    date: getLocalDateKey(),
+    sleep,
+    energy: dailyState.energy,
+    soreness: dailyState.soreness,
+    pain: dailyState.pain
+  };
+  safeWrite(STORAGE_KEYS.daily, entry);
+  todayDaily = entry;
+  routeFromDaily();
+}
+
+function routeFromDaily(){
+  document.getElementById('screen-daily').classList.remove('active');
+  if(saved.weekState){
+    generateWeek();
+  } else {
+    document.getElementById('screen-checkin').classList.add('active');
+  }
+}
+// // DAILY CHECK-IN END
+
+// SESSION LOGGING START
+function logStatusClass(status){
+  if(status==='completed') return 'pill-football';
+  if(status==='shortened') return 'pill-recover';
+  return 'pill-injured';
+}
+function logStatusText(status){
+  if(status==='completed') return 'Completed';
+  if(status==='shortened') return 'Shortened';
+  if(status==='skipped') return 'Skipped';
+  return '';
+}
+function latestLogForDay(dayName){
+  const logs = sessionLogs.filter(l=>l.day_name===dayName);
+  if(!logs.length) return null;
+  return logs.sort((a,b)=>a.date<b.date?1:-1)[0];
+}
+function todayLogEntry(){
+  const today = getLocalDateKey();
+  const logs = sessionLogs.filter(l=>l.date===today);
+  return logs.length ? logs[0] : null;
+}
+function openLogPanel(day){
+  const panel = document.getElementById(`log-panel-${day}`);
+  if(!panel) return;
+  panel.style.display = panel.style.display==='none' ? 'block' : 'none';
+}
+function pickLogChip(day, group, value){
+  document.querySelectorAll(`#log-panel-${day} .${group}-chip`).forEach(c=>c.classList.remove('sel'));
+  const chip = document.getElementById(`log-${group}-${day}-${value}`);
+  if(chip) chip.classList.add('sel');
+  const panel = document.getElementById(`log-panel-${day}`);
+  panel.dataset[group] = String(value);
+}
+function saveSessionLog(day){
+  const panel = document.getElementById(`log-panel-${day}`);
+  if(!panel) return;
+  const completed_status = panel.dataset.status || '';
+  const duration_minutes = Number(document.getElementById(`log-duration-${day}`).value);
+  const rpe = Number(panel.dataset.rpe || 0);
+  const notes = document.getElementById(`log-notes-${day}`).value.trim();
+  if(!completed_status || !duration_minutes || !rpe){
+    alert('Please set status, duration, and RPE.');
+    return;
+  }
+  const entry = {
+    date: getLocalDateKey(),
+    day_name: day,
+    completed_status,
+    duration_minutes,
+    rpe,
+    notes
+  };
+  const idx = sessionLogs.findIndex(l=>l.date===entry.date && l.day_name===entry.day_name);
+  if(idx>-1) sessionLogs[idx] = entry;
+  else sessionLogs.push(entry);
+  safeWrite(STORAGE_KEYS.logs, sessionLogs);
+  generateWeek();
+}
+// SESSION LOGGING END
+
+// REFLECTION START
+function reflectionClass(rating){
+  if(rating==='green') return 'pill-football';
+  if(rating==='amber') return 'pill-recover';
+  return 'pill-injured';
+}
+function reflectionText(rating){
+  if(rating==='green') return 'Green';
+  if(rating==='amber') return 'Amber';
+  if(rating==='red') return 'Red';
+  return '';
+}
+function latestReflectionForDay(dayName){
+  const items = reflections.filter(r=>r.day_name===dayName);
+  if(!items.length) return null;
+  return items.sort((a,b)=>a.date<b.date?1:-1)[0];
+}
+function todayReflectionEntry(){
+  const today = getLocalDateKey();
+  const items = reflections.filter(r=>r.date===today);
+  return items.length ? items[0] : null;
+}
+function openReflectPanel(day){
+  const panel = document.getElementById(`reflect-panel-${day}`);
+  if(!panel) return;
+  panel.style.display = panel.style.display==='none' ? 'block' : 'none';
+}
+function pickReflectChip(day, group, value){
+  document.querySelectorAll(`#reflect-panel-${day} .${group}-chip`).forEach(c=>c.classList.remove('sel'));
+  const chip = document.getElementById(`reflect-${group}-${day}-${value}`);
+  if(chip) chip.classList.add('sel');
+  const panel = document.getElementById(`reflect-panel-${day}`);
+  panel.dataset[group] = String(value);
+}
+function saveReflection(day){
+  const panel = document.getElementById(`reflect-panel-${day}`);
+  if(!panel) return;
+  const rating = panel.dataset.rating || '';
+  const confidence = Number(panel.dataset.confidence || 0);
+  const went_well = document.getElementById(`reflect-well-${day}`).value.trim();
+  const improve = document.getElementById(`reflect-improve-${day}`).value.trim();
+  const action_point = document.getElementById(`reflect-action-${day}`).value.trim();
+  if(!rating || !went_well || !improve || !action_point){
+    alert('Please complete rating, what went well, improve, and action point.');
+    return;
+  }
+  const entry = {
+    date:getLocalDateKey(),
+    day_name:day,
+    rating,
+    went_well,
+    improve,
+    action_point,
+    confidence: confidence || undefined
+  };
+  const idx = reflections.findIndex(r=>r.date===entry.date && r.day_name===entry.day_name);
+  if(idx>-1) reflections[idx] = entry;
+  else reflections.push(entry);
+  safeWrite(STORAGE_KEYS.reflections, reflections);
+  generateWeek();
+}
+// REFLECTION END
+
+// DASHBOARD START
+function parseLocalDate(dateStr){
+  if(!dateStr) return null;
+  const parts = dateStr.split('-').map(Number);
+  if(parts.length!==3 || parts.some(Number.isNaN)) return null;
+  return new Date(parts[0], parts[1]-1, parts[2]);
+}
+function currentWeekRange(){
+  const today = parseLocalDate(getLocalDateKey());
+  const offset = (today.getDay()+6)%7; // monday = 0
+  const start = new Date(today);
+  start.setDate(today.getDate()-offset);
+  start.setHours(0,0,0,0);
+  const end = new Date(start);
+  end.setDate(start.getDate()+6);
+  end.setHours(23,59,59,999);
+  return {start,end};
+}
+function inCurrentWeek(dateStr){
+  const d = parseLocalDate(dateStr);
+  if(!d) return false;
+  d.setHours(12,0,0,0);
+  const {start,end} = currentWeekRange();
+  return d>=start && d<=end;
+}
+function currentStreakDays(){
+  const activeDates = new Set([
+    ...sessionLogs.map(l=>l.date),
+    ...reflections.map(r=>r.date)
+  ]);
+  let streak = 0;
+  let d = parseLocalDate(getLocalDateKey());
+  while(true){
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if(!activeDates.has(key)) break;
+    streak += 1;
+    d.setDate(d.getDate()-1);
+  }
+  return streak;
+}
+function dashboardInsight(stats){
+  if(stats.skipped >= 2) return 'You’ve skipped multiple sessions. Reset tomorrow.';
+  if(stats.logs >= 4 && stats.reflections < Math.ceil(stats.logs/2)) return 'Logging is good, but reflections are lagging.';
+  if(stats.avgRpeNum !== null && stats.avgRpeNum >= 8) return 'Effort is high — watch recovery.';
+  if(stats.logs >= 3) return 'You’re consistent this week.';
+  return 'Small wins count — log today.';
+}
+function renderDashboard(){
+  const weekLogs = sessionLogs.filter(l=>inCurrentWeek(l.date));
+  const weekRefs = reflections.filter(r=>inCurrentWeek(r.date));
+  const completed = weekLogs.filter(l=>l.completed_status==='completed').length;
+  const shortened = weekLogs.filter(l=>l.completed_status==='shortened').length;
+  const skipped = weekLogs.filter(l=>l.completed_status==='skipped').length;
+  const rpes = weekLogs.map(l=>Number(l.rpe)).filter(n=>!Number.isNaN(n) && n>0);
+  const avgRpeNum = rpes.length ? rpes.reduce((a,b)=>a+b,0)/rpes.length : null;
+  const confs = weekRefs.map(r=>Number(r.confidence)).filter(n=>!Number.isNaN(n) && n>0);
+  const avgConfNum = confs.length ? confs.reduce((a,b)=>a+b,0)/confs.length : null;
+  const streak = currentStreakDays();
+  const stats = {logs:weekLogs.length,reflections:weekRefs.length,skipped,avgRpeNum};
+  const insight = dashboardInsight(stats);
+
+  const activities = [];
+  const latestDaily = safeRead(STORAGE_KEYS.daily, null);
+  if(latestDaily && latestDaily.date){
+    activities.push({date:latestDaily.date,type:'Daily check-in',summary:`Energy ${latestDaily.energy}, Pain ${latestDaily.pain}`});
+  }
+  sessionLogs.forEach(l=>activities.push({date:l.date,type:'Session log',summary:`${logStatusText(l.completed_status)}, ${l.duration_minutes} min, RPE ${l.rpe}`}));
+  reflections.forEach(r=>{
+    const conf = r.confidence ? `, Confidence ${r.confidence}` : '';
+    activities.push({date:r.date,type:'Reflection',summary:`${reflectionText(r.rating)}${conf}`});
+  });
+  activities.sort((a,b)=>a.date<b.date?1:-1);
+  const recent = activities.slice(0,5);
+
+  const el = document.getElementById('dashboard-card');
+  if(!el) return;
+  el.innerHTML = `
+    <div style="font-size:13px;color:var(--color-text-primary);line-height:1.7">
+      <div><strong>Sessions logged:</strong> ${weekLogs.length}</div>
+      <div><strong>Completed:</strong> ${completed} · <strong>Shortened:</strong> ${shortened} · <strong>Skipped:</strong> ${skipped}</div>
+      <div><strong>Avg RPE:</strong> ${avgRpeNum===null?'—':avgRpeNum.toFixed(1)}</div>
+      <div><strong>Reflections:</strong> ${weekRefs.length}</div>
+      <div><strong>Avg confidence:</strong> ${avgConfNum===null?'—':avgConfNum.toFixed(1)}</div>
+      <div><strong>Current streak:</strong> ${streak} days</div>
+    </div>
+    <div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:var(--color-background-secondary);font-size:12px;color:var(--color-text-secondary)">
+      ${insight}
+    </div>
+    <div class="q-label" style="margin:10px 0 6px">Recent activity</div>
+    ${recent.length ? recent.map(a=>`<div class="injury-row"><span class="inj-name">${a.date} · ${a.type} · ${a.summary}</span></div>`).join('') : `<div class="injury-row"><span class="inj-name">No recent activity yet.</span></div>`}
+  `;
+}
+// DASHBOARD END
 
 // ─── PROGRAMME DATA ───────────────────────────────────────────────────────────
 // Each day: normal + injured variants
@@ -541,7 +889,35 @@ const STUDY_PLAYERS = [
 function generateWeek(){
   const {body,inj,focus,week:wk,sleep:sl,pl} = state;
   document.getElementById('screen-checkin').classList.remove('active');
+  document.getElementById('screen-daily').classList.remove('active');
   document.getElementById('screen-week').classList.add('active');
+  if(body || inj.length || focus.length || wk || sl || pl){
+    saved.weekState = {body,inj:[...inj],focus:[...focus],week:wk,sleep:sl,pl};
+  }
+  saveLocal();
+
+  const dailyBar = document.getElementById('today-bar');
+  if(todayDaily){
+    dailyBar.textContent = `Today: Sleep ${todayDaily.sleep}h · Energy ${todayDaily.energy} · Soreness ${todayDaily.soreness} · Pain ${todayDaily.pain}`;
+  } else {
+    dailyBar.textContent = 'Today: No daily check-in yet.';
+  }
+  const todayLog = todayLogEntry();
+  const todayLogWrap = document.getElementById('today-log-wrap');
+  if(todayLog){
+    todayLogWrap.innerHTML = `<div class="daily-bar"><strong>Today logged:</strong> ${logStatusText(todayLog.completed_status)} · ${todayLog.duration_minutes} min · RPE ${todayLog.rpe}</div>`;
+  } else {
+    todayLogWrap.innerHTML = '';
+  }
+  const todayReflection = todayReflectionEntry();
+  const todayReflectionWrap = document.getElementById('today-reflection-wrap');
+  if(todayReflection){
+    const confText = todayReflection.confidence ? ` · Confidence ${todayReflection.confidence}` : '';
+    todayReflectionWrap.innerHTML = `<div class="daily-bar"><strong>Today reflection:</strong> ${reflectionText(todayReflection.rating)}${confText}</div>`;
+  } else {
+    todayReflectionWrap.innerHTML = '';
+  }
+  renderDashboard();
 
   const injured = body === 'injured';
 
@@ -581,8 +957,44 @@ function generateWeek(){
       ? (plan.edInjured || plan.ed)
       : plan.ed;
 
+    // Daily adjustments layered on top
+    if(todayDaily){
+      if(todayDaily.pain >= 6){
+        sessions = sessions.map(s => s.label.includes('Pitch')
+          ? {time:s.time,label:'Rehab block',items:[
+              'Pain is elevated today — no pitch exposure.',
+              'Copenhagens 6 each side · Hip flexion KB 8 each side · Isometric split squat hold 3×30s',
+              'Light mobility only: hip 90/90 and hamstring flossing'
+            ]}
+          : s
+        );
+      }
+
+      if(todayDaily.soreness >= 4){
+        sessions = sessions.map(s => ({
+          ...s,
+          items:s.items.filter(item => {
+            const txt = item.toLowerCase();
+            return !(txt.includes('sprint') || txt.includes('conditioning'));
+          })
+        }));
+      }
+
+      if(todayDaily.sleep < 5 && sessions.length){
+        sessions = sessions.slice(0,-1);
+      }
+
+      if(todayDaily.energy <= 2){
+        sessions = [{time:'Today',label:'Minimum version',items:[edText]}];
+      }
+    }
+
     const plNote = pl==='yes' && (day==='Wednesday'||day==='Friday') ? ' + Powerleague' : '';
     const pillText = plan.pillText + plNote;
+    const latestLog = latestLogForDay(day);
+    const logBadge = latestLog ? `<span class="day-pill ${logStatusClass(latestLog.completed_status)}">${logStatusText(latestLog.completed_status)}</span>` : '';
+    const latestReflection = latestReflectionForDay(day);
+    const reflectionBadge = latestReflection ? `<span class="day-pill ${reflectionClass(latestReflection.rating)}">${reflectionText(latestReflection.rating)}</span>` : '';
 
     // show player study on Saturday
     const playerStudyHTML = day==='Saturday' ? `<div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:var(--color-background-info);font-size:12px;color:var(--color-text-info);line-height:1.5"><strong>Player to study this week:</strong> ${player.name} — ${player.why}</div>` : '';
@@ -607,6 +1019,8 @@ function generateWeek(){
         <div class="day-left">
           <span class="day-name">${day}</span>
           <span class="day-pill ${plan.pill}">${pillText}</span>
+          ${logBadge}
+          ${reflectionBadge}
         </div>
         <span class="day-chevron">&#9660;</span>
       </div>
@@ -618,6 +1032,42 @@ function generateWeek(){
         <div class="ed-block">
           <div class="ed-label">Low energy / executive dysfunction fallback</div>
           <div class="ed-text">${edText}</div>
+        </div>
+        <div style="margin-top:10px">
+          <button class="save-btn" onclick="openLogPanel('${day}')">Log session</button>
+          ${latestLog ? `<button class="save-btn" style="margin-left:6px" onclick="openReflectPanel('${day}')">Reflect</button>` : ''}
+          <div id="log-panel-${day}" data-status="${latestLog?latestLog.completed_status:''}" data-rpe="${latestLog?latestLog.rpe:''}" style="display:none;margin-top:10px;background:var(--color-background-secondary);padding:10px;border-radius:var(--border-radius-md)">
+            <div class="q-label" style="margin-bottom:6px">Completed status</div>
+            <div class="chip-row" style="margin-bottom:8px">
+              <div id="log-status-${day}-completed" class="chip status-chip ${latestLog&&latestLog.completed_status==='completed'?'sel':''}" onclick="pickLogChip('${day}','status','completed')">Completed</div>
+              <div id="log-status-${day}-shortened" class="chip status-chip ${latestLog&&latestLog.completed_status==='shortened'?'sel':''}" onclick="pickLogChip('${day}','status','shortened')">Shortened</div>
+              <div id="log-status-${day}-skipped" class="chip status-chip ${latestLog&&latestLog.completed_status==='skipped'?'sel':''}" onclick="pickLogChip('${day}','status','skipped')">Skipped</div>
+            </div>
+            <div class="q-label" style="margin-bottom:6px">Duration (minutes)</div>
+            <input id="log-duration-${day}" type="number" min="1" step="1" value="${latestLog?latestLog.duration_minutes:''}" style="width:100%;font-size:13px;padding:8px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans)">
+            <div class="q-label" style="margin:8px 0 6px">RPE (1–10)</div>
+            <div class="chip-row" style="margin-bottom:8px">
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<div id="log-rpe-${day}-${n}" class="chip rpe-chip ${latestLog&&latestLog.rpe===n?'sel':''}" onclick="pickLogChip('${day}','rpe','${n}')">${n}</div>`).join('')}
+            </div>
+            <textarea id="log-notes-${day}" class="note-input" placeholder="Quick session notes...">${latestLog&&latestLog.notes?latestLog.notes:''}</textarea>
+            <button class="save-btn" onclick="saveSessionLog('${day}')">Save log</button>
+          </div>
+          <div id="reflect-panel-${day}" data-rating="${latestReflection?latestReflection.rating:''}" data-confidence="${latestReflection&&latestReflection.confidence?latestReflection.confidence:''}" style="display:none;margin-top:10px;background:var(--color-background-secondary);padding:10px;border-radius:var(--border-radius-md)">
+            <div class="q-label" style="margin-bottom:6px">Rating</div>
+            <div class="chip-row" style="margin-bottom:8px">
+              <div id="reflect-rating-${day}-red" class="chip rating-chip ${latestReflection&&latestReflection.rating==='red'?'sel':''}" onclick="pickReflectChip('${day}','rating','red')">Red</div>
+              <div id="reflect-rating-${day}-amber" class="chip rating-chip ${latestReflection&&latestReflection.rating==='amber'?'sel':''}" onclick="pickReflectChip('${day}','rating','amber')">Amber</div>
+              <div id="reflect-rating-${day}-green" class="chip rating-chip ${latestReflection&&latestReflection.rating==='green'?'sel':''}" onclick="pickReflectChip('${day}','rating','green')">Green</div>
+            </div>
+            <div class="q-label" style="margin-bottom:6px">Confidence (optional, 1–5)</div>
+            <div class="chip-row" style="margin-bottom:8px">
+              ${[1,2,3,4,5].map(n=>`<div id="reflect-confidence-${day}-${n}" class="chip confidence-chip ${latestReflection&&latestReflection.confidence===n?'sel':''}" onclick="pickReflectChip('${day}','confidence','${n}')">${n}</div>`).join('')}
+            </div>
+            <input id="reflect-well-${day}" value="${latestReflection&&latestReflection.went_well?latestReflection.went_well:''}" placeholder="Went well..." style="width:100%;font-size:13px;padding:8px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans)">
+            <input id="reflect-improve-${day}" value="${latestReflection&&latestReflection.improve?latestReflection.improve:''}" placeholder="To improve..." style="width:100%;font-size:13px;padding:8px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans);margin-top:6px">
+            <input id="reflect-action-${day}" value="${latestReflection&&latestReflection.action_point?latestReflection.action_point:''}" placeholder="Next action point..." style="width:100%;font-size:13px;padding:8px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans);margin-top:6px">
+            <button class="save-btn" onclick="saveReflection('${day}')">Save reflection</button>
+          </div>
         </div>
       </div>`;
 
@@ -705,10 +1155,23 @@ function saveNotes(){
 function saveLocal(){
   saved.tricks = state.tricks;
   saved.injuries = state.injuries;
-  localStorage.setItem('jhnson_prog', JSON.stringify(saved));
+  safeWrite(STORAGE_KEYS.prog, saved);
 }
 
 if(saved.injNotes){ setTimeout(()=>{const el=document.getElementById('inj-notes');if(el)el.value=saved.injNotes;},100); }
+
+// // DAILY CHECK-IN START
+(function initAppFlow(){
+  if(todayDaily && saved.weekState){
+    generateWeek();
+  } else if(todayDaily){
+    document.getElementById('screen-checkin').classList.add('active');
+  } else {
+    document.getElementById('screen-daily').classList.add('active');
+    document.getElementById('screen-checkin').classList.remove('active');
+  }
+})();
+// // DAILY CHECK-IN END
 </script>
 </body>
 </html>
